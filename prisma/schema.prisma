@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // switch to "postgresql" in prod
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  AML
+}
+
+enum Currency {
+  WST
+  AUD
+  USD
+}
+
+enum ProofOfAddress {
+  BILL
+  BANK_STATEMENT
+  IRD_LETTER
+  GOVT_LETTER
+  POWER_BILL
+  WATER_BILL
+  COUNCIL_RATES
+  OTHER
+}
+
+enum SourceOfFunds {
+  SALARY_WAGES
+  SAVINGS
+  LOAN_FUNDS
+  SALE_OF_PROPERTY
+  SELF_EMPLOYED
+  FAMILY_CONTRIBUTIONS
+  FUNDRAISING_RAFFLE
+  OTHER
+}
+
+enum IdDocumentType {
+  DRIVERS_LICENSE
+  PASSPORT
+  NATIONAL_ID
+  BANK_CARD
+  BIRTH_CERTIFICATE
+  OTHER
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  roles        String        @default("STAFF") // Comma-separated roles: "STAFF,AML" or "ADMIN,AML"
+  createdAt    DateTime      @default(now())
+  transactions Transaction[] @relation("TransactionCreatedBy")
+}
+
+model Customer {
+  id           String           @id @default(cuid())
+  customerId   String           @unique // e.g. CUST-2025-000123
+  firstName    String
+  lastName     String
+  fullName     String           // first + last
+  dob          DateTime
+  phone        String           @unique // E.164
+  email        String?
+  address      String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  ids          CustomerIdFile[]
+  transactions Transaction[]
+}
+
+model CustomerIdFile {
+  id           String         @id @default(cuid())
+  customer     Customer       @relation(fields: [customerId], references: [id])
+  customerId   String
+  filePath     String
+  mimeType     String
+  documentType IdDocumentType @default(OTHER)
+  createdAt    DateTime       @default(now())
+}
+
+model Transaction {
+  id                     String          @id @default(cuid())
+  txnNumber              String          @unique // e.g. TXN-2025-10-000654
+  customer               Customer        @relation(fields: [customerId], references: [id])
+  customerId             String
+  date                   DateTime        @default(now())
+  // Beneficiary
+  beneficiaryName        String
+  beneficiaryVillage     String?
+  beneficiaryPhone       String?
+  bank                   String?
+  accountNumber          String?
+  accountName            String?
+  // Sender snapshot (at time of txn)
+  senderName             String
+  senderAddress          String?
+  senderStreetAddress    String?  // For >= NZ$1,000
+  senderSuburb           String?  // For >= NZ$1,000
+  senderCity             String?  // For >= NZ$1,000
+  senderPostcode         String?  // For >= NZ$1,000
+  senderHomePhone        String?  // For >= NZ$1,000
+  senderMobilePhone      String?  // For >= NZ$1,000 (copy of senderPhone)
+  senderPhone            String
+  senderEmail            String?
+  occupation             String?
+  purposeOfTransfer      String?
+  // Employment Details (For >= NZ$1,000)
+  employerName           String?
+  employerAddress        String?
+  employerPhone          String?
+  // Enhanced AML for >= NZ$1,000
+  reasonForRemittance    String?  // Reason for Funds Remittance
+  relationshipToBeneficiary String? // Relationship to Beneficiary
+  // Money (store cents as Int)
+  amountNzdCents         Int
+  feeNzdCents            Int
+  rate                   Float // NZD -> foreign
+  currency               Currency
+  totalPaidNzdCents      Int
+  totalForeignReceived   Float
+  // AML/KYC (from paper form)
+  id1CountryAndType      String?
+  id1Number              String?
+  id1IssueDate           DateTime?
+  id1ExpiryDate          DateTime?
+  id2CountryAndType      String?
+  id2Number              String?
+  id2IssueDate           DateTime?
+  id2ExpiryDate          DateTime?
+  dob                    DateTime // must be >= 18 years
+  verifiedWithOriginalId Boolean
+  proofOfAddressType     ProofOfAddress?
+  sourceOfFunds          SourceOfFunds?
+  sourceOfFundsDetails   String?  // Additional details about source of funds
+  bankAccountDetails     String?  // Bank account number for >= NZ$1,000
+  proofDocumentsProvided String?  // List of proof/documents provided
+  // AML Tracking
+  isPtrRequired          Boolean         @default(false) // PTR required for >= NZD 1,000
+  isGoAmlExportReady     Boolean         @default(false) // Ready for goAML export
+  goAmlExportedAt        DateTime?       // When exported to goAML
+  createdBy              User            @relation("TransactionCreatedBy", fields: [createdById], references: [id])
+  createdById            String
+  createdAt              DateTime        @default(now())
+
+  @@index([customerId, date])
+  @@index([date, currency])
+  @@index([isPtrRequired])
+  @@index([isGoAmlExportReady])
+}
+
+model ExchangeRate {
+  id          String   @id @default(cuid())
+  dateKey     String   @unique // "YYYY-MM-DD"
+  NZD_WST     Float
+  NZD_AUD     Float
+  NZD_USD     Float
+  updatedById String
+  updatedAt   DateTime @default(now())
+}
+
+model Counter {
+  name  String @id // "customer", "transaction"
+  value Int
+}
+
+model DocumentType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  label     String
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ActivityType {
+  USER_LOGIN
+  USER_LOGOUT
+  CUSTOMER_CREATED
+  CUSTOMER_UPDATED
+  CUSTOMER_VIEWED
+  CUSTOMER_ID_UPLOADED
+  CUSTOMER_ID_VIEWED
+  TRANSACTION_CREATED
+  TRANSACTION_VIEWED
+  EXCHANGE_RATE_UPDATED
+  SETTINGS_CHANGED
+  REPORT_GENERATED
+  SEARCH_PERFORMED
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  userId      String?
+  userEmail   String?
+  description String
+  entityType  String? // "Customer", "Transaction", "User", etc.
+  entityId    String? // ID of the entity affected
+  metadata    String? // JSON string for additional data
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
