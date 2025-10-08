@@ -74,7 +74,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
       <Navigation />
 
       {/* Main Content */}
@@ -83,7 +83,7 @@ export default function Dashboard() {
         {!loadingDashboard && dashboardData && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Total Amount Transferred */}
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-6 rounded-lg shadow-lg text-white">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-lg shadow-lg text-white">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium opacity-90">Total Transferred (YTD)</h3>
                 <span className="text-2xl">💰</span>
@@ -93,7 +93,7 @@ export default function Dashboard() {
             </div>
 
             {/* Total Fees Collected */}
-            <div className="bg-gradient-to-br from-cyan-500 to-blue-600 p-6 rounded-lg shadow-lg text-white">
+            <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 rounded-lg shadow-lg text-white">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium opacity-90">Fees Collected (YTD)</h3>
                 <span className="text-2xl">📊</span>
@@ -103,7 +103,7 @@ export default function Dashboard() {
             </div>
 
             {/* Current Month */}
-            <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-6 rounded-lg shadow-lg text-white">
+            <div className="bg-gradient-to-br from-sky-600 to-sky-700 p-6 rounded-lg shadow-lg text-white">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium opacity-90">This Month</h3>
                 <span className="text-2xl">📅</span>
@@ -113,7 +113,7 @@ export default function Dashboard() {
             </div>
 
             {/* Last Month */}
-            <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-6 rounded-lg shadow-lg text-white">
+            <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 p-6 rounded-lg shadow-lg text-white">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium opacity-90">Last Month</h3>
                 <span className="text-2xl">📆</span>
@@ -138,8 +138,8 @@ export default function Dashboard() {
                   <YAxis yAxisId="right" orientation="right" />
                   <Tooltip />
                   <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} name="Transaction Count" />
-                  <Line yAxisId="right" type="monotone" dataKey="amount" stroke="#0ea5e9" strokeWidth={2} name="Amount (NZD)" />
+                  <Line yAxisId="left" type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={2} name="Transaction Count" />
+                  <Line yAxisId="right" type="monotone" dataKey="amount" stroke="#3b82f6" strokeWidth={2} name="Amount (NZD)" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -163,7 +163,7 @@ export default function Dashboard() {
                     dataKey="value"
                   >
                     {Object.keys(dashboardData.currencyBreakdown).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={['#10b981', '#0ea5e9', '#f59e0b'][index % 3]} />
+                      <Cell key={`cell-${index}`} fill={['#2563eb', '#3b82f6', '#0ea5e9'][index % 3]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -183,7 +183,7 @@ export default function Dashboard() {
                 {dashboardData.topCustomers.map((customer: any, index: number) => (
                   <div key={customer.customerId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl font-bold text-emerald-600">#{index + 1}</span>
+                      <span className="text-2xl font-bold text-blue-600">#{index + 1}</span>
                       <div>
                         <p className="font-medium text-gray-900">{customer.name}</p>
                         <p className="text-xs text-gray-500">{customer.customerId}</p>
@@ -202,7 +202,7 @@ export default function Dashboard() {
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Statistics</h2>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">👥</span>
                     <div>
@@ -212,7 +212,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">🔄</span>
                     <div>
@@ -222,7 +222,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-sky-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">📈</span>
                     <div>
@@ -277,7 +277,7 @@ export default function Dashboard() {
             <button
               type="submit"
               disabled={searching}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
             >
               {searching ? 'Searching...' : 'Search'}
             </button>
@@ -310,13 +310,13 @@ export default function Dashboard() {
               <div className="flex gap-2">
                 <a
                   href={`/customers/${searchResult.id}`}
-                  className="px-3 py-1 bg-emerald-600 text-white text-sm rounded-md hover:bg-emerald-700 transition-colors"
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
                 >
                   View Details
                 </a>
                 <a
                   href={`/transactions/new?customerId=${searchResult.id}`}
-                  className="px-3 py-1 bg-teal-600 text-white text-sm rounded-md hover:bg-teal-700 transition-colors"
+                  className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
                 >
                   New Transaction
                 </a>

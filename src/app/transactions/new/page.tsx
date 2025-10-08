@@ -212,7 +212,7 @@ export default function NewTransactionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
       <Navigation />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -233,7 +233,7 @@ export default function NewTransactionPage() {
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
                   Search
                 </button>
@@ -251,7 +251,7 @@ export default function NewTransactionPage() {
                 </div>
                 <button
                   onClick={() => { setCustomer(null); setFormData(prev => ({ ...prev, customerId: '' })); }}
-                  className="text-sm text-emerald-600 hover:text-emerald-700"
+                  className="text-sm text-blue-600 hover:text-blue-700"
                 >
                   Change Customer
                 </button>
@@ -326,7 +326,7 @@ export default function NewTransactionPage() {
               </div>
 
               {/* Money */}
-              <div className="space-y-4 bg-yellow-50 p-4 rounded-md">
+              <div className="space-y-4 bg-blue-50 p-4 rounded-md border-2 border-blue-200">
                 <h2 className="text-lg font-semibold">Transaction Details</h2>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
@@ -731,7 +731,7 @@ export default function NewTransactionPage() {
                   type="checkbox"
                   checked={formData.verifiedWithOriginalId}
                   onChange={(e) => setFormData({ ...formData, verifiedWithOriginalId: e.target.checked })}
-                  className="h-4 w-4 text-emerald-600 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
                 <label htmlFor="verified" className="ml-2 text-sm text-gray-700">
                   Verified with original ID
@@ -748,7 +748,7 @@ export default function NewTransactionPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
                   {loading ? 'Creating Transaction...' : 'Create Transaction'}
                 </button>

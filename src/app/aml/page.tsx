@@ -177,7 +177,7 @@ export default function AMLPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -209,7 +209,7 @@ export default function AMLPage() {
                 }}
                 className={`px-6 py-4 text-sm font-medium ${
                   activeTab === 'ptr'
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -223,7 +223,7 @@ export default function AMLPage() {
                 }}
                 className={`px-6 py-4 text-sm font-medium ${
                   activeTab === 'goaml'
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -266,7 +266,7 @@ export default function AMLPage() {
                   <button
                     onClick={handleExport}
                     disabled={exporting || selectedTransactions.size === 0}
-                    className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {exporting ? 'Exporting...' : `Mark as Exported (${selectedTransactions.size})`}
                   </button>
@@ -294,7 +294,7 @@ export default function AMLPage() {
                             type="checkbox"
                             checked={selectedTransactions.size === transactions.length}
                             onChange={selectAll}
-                            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                         </th>
                       )}
@@ -327,12 +327,12 @@ export default function AMLPage() {
                               type="checkbox"
                               checked={selectedTransactions.has(txn.id)}
                               onChange={() => toggleTransaction(txn.id)}
-                              className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                           </td>
                         )}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-emerald-600">{txn.txnNumber}</div>
+                          <div className="text-sm font-medium text-blue-600">{txn.txnNumber}</div>
                           <div className="text-xs text-gray-500">{txn.customer.customerId}</div>
                         </td>
                         <td className="px-6 py-4">

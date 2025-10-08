@@ -108,7 +108,7 @@ export default function ReportsPage() {
           <button
             onClick={generateReport}
             disabled={loading || (reportType === 'daily' && !date) || (reportType === 'monthly' && !month)}
-            className="px-6 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Generating...' : 'Generate Report'}
           </button>

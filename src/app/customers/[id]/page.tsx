@@ -137,7 +137,7 @@ export default function CustomerDetailPage() {
             </div>
             <a
               href={`/transactions/new?customerId=${customer.id}`}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               New Transaction
             </a>
@@ -194,7 +194,7 @@ export default function CustomerDetailPage() {
                   id="docType"
                   value={selectedDocType}
                   onChange={(e) => setSelectedDocType(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="DRIVERS_LICENSE">Driver's License</option>
                   <option value="PASSPORT">Passport</option>
@@ -212,7 +212,7 @@ export default function CustomerDetailPage() {
                     accept="image/*,application/pdf"
                     onChange={handleFileUpload}
                     disabled={uploading}
-                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 disabled:opacity-50"
+                    className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
                   />
                 </label>
               </div>
@@ -232,7 +232,7 @@ export default function CustomerDetailPage() {
                           {idFile.filePath.endsWith('.pdf') ? '📄' : '🖼️'}
                         </span>
                         <div className="flex-1">
-                          <p className="font-semibold text-emerald-600 hover:text-emerald-700">
+                          <p className="font-semibold text-blue-600 hover:text-blue-700">
                             {getDocumentTypeLabel(idFile.documentType)}
                           </p>
                           <p className="text-xs text-gray-500">
@@ -319,7 +319,7 @@ export default function CustomerDetailPage() {
                 href={viewingFile}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 Open in New Tab
               </a>

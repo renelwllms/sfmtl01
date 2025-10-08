@@ -107,7 +107,7 @@ export default function AllTransactionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
       <Navigation />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -130,7 +130,7 @@ export default function AllTransactionsPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Customer name, ID, transaction number, or beneficiary..."
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               <div>
@@ -141,7 +141,7 @@ export default function AllTransactionsPage() {
                   id="currency"
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">All Currencies</option>
                   <option value="WST">WST - Samoan Tala</option>
@@ -153,7 +153,7 @@ export default function AllTransactionsPage() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
                 Search
               </button>
@@ -174,7 +174,7 @@ export default function AllTransactionsPage() {
         </div>
 
         {/* Summary */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-4 rounded-lg shadow mb-6">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-lg shadow mb-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm opacity-90">Total Transactions</p>
@@ -247,7 +247,7 @@ export default function AllTransactionsPage() {
                             day: 'numeric'
                           })}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
                           {txn.txnNumber}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

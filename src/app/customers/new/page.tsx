@@ -160,7 +160,7 @@ export default function NewCustomerPage() {
                     required
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loading}
                   />
                 </div>
@@ -175,7 +175,7 @@ export default function NewCustomerPage() {
                     required
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loading}
                   />
                 </div>
@@ -199,7 +199,7 @@ export default function NewCustomerPage() {
                   placeholderText="Select date of birth"
                   required
                   disabled={loading}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   wrapperClassName="w-full"
                 />
               </div>
@@ -221,7 +221,7 @@ export default function NewCustomerPage() {
                   placeholder="+6421234567"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   disabled={loading}
                 />
               </div>
@@ -235,7 +235,7 @@ export default function NewCustomerPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   disabled={loading}
                 />
               </div>
@@ -249,7 +249,7 @@ export default function NewCustomerPage() {
                   rows={3}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   disabled={loading}
                 />
               </div>
@@ -273,7 +273,7 @@ export default function NewCustomerPage() {
                       value={selectedDocType}
                       onChange={(e) => setSelectedDocType(e.target.value)}
                       disabled={loading}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       {documentTypes.map((docType) => (
                         <option key={docType.id} value={docType.name}>
@@ -299,8 +299,8 @@ export default function NewCustomerPage() {
                           file:mr-4 file:py-2 file:px-4
                           file:rounded-md file:border-0
                           file:text-sm file:font-semibold
-                          file:bg-emerald-50 file:text-emerald-700
-                          hover:file:bg-emerald-100
+                          file:bg-blue-50 file:text-blue-700
+                          hover:file:bg-blue-100
                           file:cursor-pointer
                           disabled:opacity-50 disabled:cursor-not-allowed"
                       />
@@ -317,13 +317,13 @@ export default function NewCustomerPage() {
                   {idFiles.map((item, index) => (
                     <div key={index} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                       <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                           <span className="text-2xl">📄</span>
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {item.documentType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                           </span>
                         </div>
@@ -354,7 +354,7 @@ export default function NewCustomerPage() {
               <button
                 type="submit"
                 disabled={loading || uploadingIds}
-                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {uploadingIds ? 'Uploading Documents...' : loading ? 'Creating Customer...' : 'Create Customer'}
               </button>

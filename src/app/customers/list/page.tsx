@@ -51,7 +51,7 @@ export default function CustomerListPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <a href="/" className="text-emerald-600 hover:text-emerald-700">← Back to Dashboard</a>
+          <a href="/" className="text-blue-600 hover:text-blue-700">← Back to Dashboard</a>
         </div>
       </div>
     );
@@ -116,7 +116,7 @@ export default function CustomerListPage() {
                 {filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer) => (
                     <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-600">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
                         {customer.customerId}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -132,7 +132,7 @@ export default function CustomerListPage() {
                         {new Date(customer.dob).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-emerald-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {customer._count.transactions}
                         </span>
                       </td>
@@ -143,7 +143,7 @@ export default function CustomerListPage() {
                         <div className="flex justify-end gap-2">
                           <a
                             href={`/customers/${customer.id}`}
-                            className="text-emerald-600 hover:text-emerald-900"
+                            className="text-blue-600 hover:text-blue-900"
                           >
                             View
                           </a>

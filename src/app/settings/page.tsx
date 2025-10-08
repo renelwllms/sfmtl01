@@ -235,8 +235,8 @@ export default function SettingsPage() {
       CUSTOMER_VIEWED: 'bg-purple-100 text-purple-800',
       CUSTOMER_ID_UPLOADED: 'bg-indigo-100 text-indigo-800',
       CUSTOMER_ID_VIEWED: 'bg-purple-100 text-purple-800',
-      TRANSACTION_CREATED: 'bg-emerald-100 text-emerald-800',
-      TRANSACTION_VIEWED: 'bg-teal-100 text-teal-800',
+      TRANSACTION_CREATED: 'bg-blue-100 text-blue-800',
+      TRANSACTION_VIEWED: 'bg-indigo-100 text-indigo-800',
       EXCHANGE_RATE_UPDATED: 'bg-orange-100 text-orange-800',
       SETTINGS_CHANGED: 'bg-pink-100 text-pink-800',
       REPORT_GENERATED: 'bg-cyan-100 text-cyan-800',
@@ -318,7 +318,7 @@ export default function SettingsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -334,7 +334,7 @@ export default function SettingsPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
           <p className="text-gray-600 mb-4">You need admin privileges to access this page.</p>
-          <a href="/" className="text-emerald-600 hover:text-blue-700">← Back to Dashboard</a>
+          <a href="/" className="text-blue-600 hover:text-blue-700">← Back to Dashboard</a>
         </div>
       </div>
     );
@@ -352,7 +352,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab('rates')}
                 className={`px-6 py-4 text-sm font-medium ${
                   activeTab === 'rates'
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -362,7 +362,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab('users')}
                 className={`px-6 py-4 text-sm font-medium ${
                   activeTab === 'users'
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -372,7 +372,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab('ui')}
                 className={`px-6 py-4 text-sm font-medium ${
                   activeTab === 'ui'
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -382,7 +382,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab('logs')}
                 className={`px-6 py-4 text-sm font-medium ${
                   activeTab === 'logs'
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -392,7 +392,7 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab('doctypes')}
                 className={`px-6 py-4 text-sm font-medium ${
                   activeTab === 'doctypes'
-                    ? 'border-b-2 border-emerald-500 text-emerald-600'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -484,7 +484,7 @@ export default function SettingsPage() {
                 <button
                   onClick={saveRates}
                   disabled={savingRates}
-                  className="px-6 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
                   {savingRates ? 'Saving...' : 'Save Exchange Rates'}
                 </button>
@@ -540,7 +540,7 @@ export default function SettingsPage() {
                               setNewUser({ ...newUser, roles: newUser.roles.filter(r => r !== 'STAFF') });
                             }
                           }}
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">Staff</span>
                       </label>
@@ -555,7 +555,7 @@ export default function SettingsPage() {
                               setNewUser({ ...newUser, roles: newUser.roles.filter(r => r !== 'ADMIN') });
                             }
                           }}
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">Admin</span>
                       </label>
@@ -570,7 +570,7 @@ export default function SettingsPage() {
                               setNewUser({ ...newUser, roles: newUser.roles.filter(r => r !== 'AML') });
                             }
                           }}
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700">AML (Anti-Money Laundering)</span>
                       </label>
@@ -592,7 +592,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={creatingUser}
-                    className="px-6 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                   >
                     {creatingUser ? 'Creating...' : 'Create User'}
                   </button>
@@ -643,8 +643,8 @@ export default function SettingsPage() {
                       onClick={() => updateSettings({ navPosition: 'top' })}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         uiSettings.navPosition === 'top'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 hover:border-emerald-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
                       <div className="text-center">
@@ -658,8 +658,8 @@ export default function SettingsPage() {
                       onClick={() => updateSettings({ navPosition: 'left' })}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         uiSettings.navPosition === 'left'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 hover:border-emerald-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
                       <div className="text-center">
@@ -673,8 +673,8 @@ export default function SettingsPage() {
                       onClick={() => updateSettings({ navPosition: 'right' })}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         uiSettings.navPosition === 'right'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 hover:border-emerald-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
                       <div className="text-center">
@@ -696,37 +696,37 @@ export default function SettingsPage() {
                       onClick={() => updateSettings({ navStyle: 'gradient' })}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         uiSettings.navStyle === 'gradient'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 hover:border-emerald-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
-                      <div className="h-8 bg-gradient-to-r from-emerald-600 to-teal-600 rounded mb-2"></div>
+                      <div className="h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded mb-2"></div>
                       <div className="font-medium">Gradient</div>
-                      <div className="text-xs text-gray-500">Emerald to teal gradient</div>
+                      <div className="text-xs text-gray-500">Blue to indigo gradient</div>
                     </button>
 
                     <button
                       onClick={() => updateSettings({ navStyle: 'solid' })}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         uiSettings.navStyle === 'solid'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 hover:border-emerald-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
-                      <div className="h-8 bg-emerald-600 rounded mb-2"></div>
+                      <div className="h-8 bg-blue-600 rounded mb-2"></div>
                       <div className="font-medium">Solid</div>
-                      <div className="text-xs text-gray-500">Solid emerald color</div>
+                      <div className="text-xs text-gray-500">Solid blue color</div>
                     </button>
 
                     <button
                       onClick={() => updateSettings({ navStyle: 'glass' })}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         uiSettings.navStyle === 'glass'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 hover:border-emerald-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
-                      <div className="h-8 bg-emerald-600/90 backdrop-blur rounded mb-2"></div>
+                      <div className="h-8 bg-blue-600/90 backdrop-blur rounded mb-2"></div>
                       <div className="font-medium">Glass</div>
                       <div className="text-xs text-gray-500">Translucent with blur</div>
                     </button>
@@ -735,8 +735,8 @@ export default function SettingsPage() {
                       onClick={() => updateSettings({ navStyle: 'minimal' })}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         uiSettings.navStyle === 'minimal'
-                          ? 'border-emerald-500 bg-emerald-50'
-                          : 'border-gray-200 hover:border-emerald-300'
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-blue-300'
                       }`}
                     >
                       <div className="h-8 bg-white border-b-2 border-gray-200 rounded mb-2"></div>
@@ -774,7 +774,7 @@ export default function SettingsPage() {
                       id="activityType"
                       value={logFilter.type}
                       onChange={(e) => setLogFilter({ ...logFilter, type: e.target.value })}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">All Activities</option>
                       <option value="USER_LOGIN">User Login</option>
@@ -802,7 +802,7 @@ export default function SettingsPage() {
                       value={logFilter.search}
                       onChange={(e) => setLogFilter({ ...logFilter, search: e.target.value })}
                       placeholder="Search description, user email, or entity ID..."
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -923,7 +923,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Add New Document Type */}
-                <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Add New Document Type</h3>
                   <form onSubmit={handleAddDocumentType} className="flex gap-3">
                     <input
@@ -931,11 +931,11 @@ export default function SettingsPage() {
                       value={newDocType.label}
                       onChange={(e) => setNewDocType({ label: e.target.value })}
                       placeholder="e.g., Police Clearance, Utility Bill"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Add Type
                     </button>
@@ -965,7 +965,7 @@ export default function SettingsPage() {
                       {documentTypes.map((docType) => (
                         <div key={docType.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                               <span className="text-xl">📄</span>
                             </div>
                             <div>
