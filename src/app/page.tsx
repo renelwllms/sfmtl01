@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { formatNZDate, formatNZDateTime } from '@/lib/date-utils';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();

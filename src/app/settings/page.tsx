@@ -38,7 +38,7 @@ interface DocumentType {
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const { settings: uiSettings, updateSettings } = useUI();
-  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes'>('rates');
+  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email'>('rates');
 
   // Exchange Rates State
   const [rateDate, setRateDate] = useState('');
@@ -82,6 +82,21 @@ export default function SettingsPage() {
   const [docTypeMessage, setDocTypeMessage] = useState('');
   const [docTypeError, setDocTypeError] = useState('');
 
+  // Email Settings State
+  const [emailSettings, setEmailSettings] = useState({
+    enabled: false,
+    clientId: '',
+    clientSecret: '',
+    tenantId: '',
+    senderEmail: '',
+    senderName: ''
+  });
+  const [loadingEmailSettings, setLoadingEmailSettings] = useState(false);
+  const [savingEmailSettings, setSavingEmailSettings] = useState(false);
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [testingEmail, setTestingEmail] = useState(false);
+
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     setRateDate(today);
@@ -97,6 +112,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === 'doctypes') {
       fetchDocumentTypes();
+    } else if (activeTab === 'email') {
+      fetchEmailSettings();
     }
   }, [activeTab]);
 
@@ -313,6 +330,78 @@ export default function SettingsPage() {
     }
   }
 
+  async function fetchEmailSettings() {
+    setLoadingEmailSettings(true);
+    try {
+      const response = await fetch('/api/settings/email');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings) {
+          setEmailSettings(data.settings);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch email settings:', error);
+    } finally {
+      setLoadingEmailSettings(false);
+    }
+  }
+
+  async function handleSaveEmailSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailError('');
+    setEmailMessage('');
+    setSavingEmailSettings(true);
+
+    try {
+      const response = await fetch('/api/settings/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailSettings)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setEmailError(data.error || 'Failed to save email settings');
+        return;
+      }
+
+      setEmailMessage('Email settings saved successfully!');
+      setTimeout(() => setEmailMessage(''), 3000);
+    } catch (err) {
+      setEmailError('An error occurred while saving email settings');
+    } finally {
+      setSavingEmailSettings(false);
+    }
+  }
+
+  async function handleTestEmail() {
+    setEmailError('');
+    setEmailMessage('');
+    setTestingEmail(true);
+
+    try {
+      const response = await fetch('/api/settings/email/test', {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setEmailError(data.error || 'Failed to send test email');
+        return;
+      }
+
+      setEmailMessage('Test email sent successfully! Check your inbox.');
+      setTimeout(() => setEmailMessage(''), 5000);
+    } catch (err) {
+      setEmailError('An error occurred while sending test email');
+    } finally {
+      setTestingEmail(false);
+    }
+  }
+
   // Show loading state while session is being fetched
   if (status === 'loading') {
     return (
@@ -397,6 +486,16 @@ export default function SettingsPage() {
                 }`}
               >
                 Document Types
+              </button>
+              <button
+                onClick={() => setActiveTab('email')}
+                className={`px-6 py-4 text-sm font-medium ${
+                  activeTab === 'email'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Email (Office 365)
               </button>
             </div>
           </div>
@@ -999,6 +1098,178 @@ export default function SettingsPage() {
                     💡 Note: Default document types (Driver's License, Passport, etc.) cannot be deleted but can be deactivated. Custom document types can be removed completely.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* Email Settings Tab */}
+            {activeTab === 'email' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Office 365 Email Integration</h2>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Configure Office 365 (Microsoft 365) email settings to send automated emails for transaction confirmations, receipts, and notifications.
+                  </p>
+                </div>
+
+                {loadingEmailSettings ? (
+                  <div className="text-center py-12 text-gray-600">Loading email settings...</div>
+                ) : (
+                  <form onSubmit={handleSaveEmailSettings} className="space-y-6">
+                    {/* Enable/Disable Toggle */}
+                    <div className="flex items-center justify-between bg-blue-50 p-4 rounded-lg">
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900">Enable Email Integration</h3>
+                        <p className="text-xs text-gray-600 mt-1">Turn on to use Office 365 for sending emails</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={emailSettings.enabled}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, enabled: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Azure AD App Registration Details */}
+                    <div className="space-y-4">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-2">📋 Setup Instructions</h4>
+                        <ol className="text-xs text-gray-700 space-y-1 list-decimal list-inside">
+                          <li>Go to Azure Portal → Azure Active Directory → App registrations</li>
+                          <li>Create a new app registration or use an existing one</li>
+                          <li>Add API permissions: Mail.Send (Application permission)</li>
+                          <li>Create a client secret under "Certificates & secrets"</li>
+                          <li>Copy the Application (client) ID, Directory (tenant) ID, and client secret value</li>
+                          <li>Grant admin consent for the Mail.Send permission</li>
+                        </ol>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Tenant ID (Directory ID)
+                        </label>
+                        <input
+                          type="text"
+                          value={emailSettings.tenantId}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, tenantId: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., 12345678-1234-1234-1234-123456789012"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Found in Azure AD → Overview</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Client ID (Application ID)
+                        </label>
+                        <input
+                          type="text"
+                          value={emailSettings.clientId}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, clientId: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="e.g., 87654321-4321-4321-4321-210987654321"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Found in App registration → Overview</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Client Secret
+                        </label>
+                        <input
+                          type="password"
+                          value={emailSettings.clientSecret}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, clientSecret: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter client secret value"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Found in App registration → Certificates & secrets</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Sender Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={emailSettings.senderEmail}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, senderEmail: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="noreply@yourdomain.com"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">The email address that will send the emails</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Sender Name
+                        </label>
+                        <input
+                          type="text"
+                          value={emailSettings.senderName}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, senderName: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="SFMTL Notifications"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">The display name for outgoing emails</p>
+                      </div>
+                    </div>
+
+                    {/* Messages */}
+                    {emailMessage && (
+                      <div className="rounded-md bg-green-50 p-4">
+                        <p className="text-sm text-green-800">{emailMessage}</p>
+                      </div>
+                    )}
+
+                    {emailError && (
+                      <div className="rounded-md bg-red-50 p-4">
+                        <p className="text-sm text-red-800">{emailError}</p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4 border-t">
+                      <button
+                        type="submit"
+                        disabled={savingEmailSettings}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      >
+                        {savingEmailSettings ? 'Saving...' : 'Save Settings'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleTestEmail}
+                        disabled={testingEmail || !emailSettings.enabled || !emailSettings.senderEmail}
+                        className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+                      >
+                        {testingEmail ? 'Sending...' : 'Send Test Email'}
+                      </button>
+                    </div>
+
+                    {/* Security Note */}
+                    <div className="rounded-md bg-yellow-50 p-4">
+                      <p className="text-sm text-yellow-800">
+                        🔒 Security: Client secrets are stored encrypted in the database. Only administrators can view and modify these settings.
+                      </p>
+                    </div>
+
+                    {/* Use Cases */}
+                    <div className="rounded-md bg-blue-50 p-4">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">📧 Email Use Cases</h4>
+                      <ul className="text-xs text-gray-700 space-y-1 list-disc list-inside">
+                        <li>Transaction receipts sent to customers</li>
+                        <li>Transaction confirmations with details</li>
+                        <li>Daily transaction summaries for staff</li>
+                        <li>AML/PTR alerts and notifications</li>
+                        <li>Customer welcome emails</li>
+                        <li>Password reset emails</li>
+                      </ul>
+                    </div>
+                  </form>
+                )}
               </div>
             )}
           </div>

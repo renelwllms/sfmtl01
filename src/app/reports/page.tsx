@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Navigation from '@/components/Navigation';
+import { formatNZDate } from '@/lib/date-utils';
 
 type ReportType = 'daily' | 'monthly';
 
@@ -221,7 +222,7 @@ export default function ReportsPage() {
                         <tr key={txn.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">{txn.txnNumber}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">
-                            {new Date(txn.date).toLocaleDateString()}
+                            {formatNZDate(txn.date)}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             <div>{txn.customer.fullName}</div>

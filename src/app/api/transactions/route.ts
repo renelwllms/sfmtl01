@@ -113,6 +113,17 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = (session.user as any).id;
+
+    // Verify user exists
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID not found in session' }, { status: 400 });
+    }
+
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
+    }
+
     const body = await request.json();
 
     // Validate input
@@ -144,7 +155,7 @@ export async function POST(request: NextRequest) {
     // Determine AML flags for international transactions
     const isInternational = data.currency !== 'WST';
     const isPtrRequired = isInternational && data.totalPaidNzdCents >= 100000; // >= NZD 1,000
-    const isGoAmlExportReady = isPtrRequired; // Same criteria for now
+    const isGoAmlExportReady = data.totalPaidNzdCents >= 100000; // All transactions >= NZD 1,000
 
     // Create transaction
     const transaction = await db.transaction.create({

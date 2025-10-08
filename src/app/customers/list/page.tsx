@@ -2,12 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
+import { useSession } from 'next-auth/react';
+import { formatNZDate } from '@/lib/date-utils';
 
 export default function CustomerListPage() {
+  const { data: session } = useSession();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const userRoles = (session?.user as any)?.roles || '';
+  const isAdmin = userRoles.split(',').includes('ADMIN');
 
   useEffect(() => {
     fetchCustomers();
@@ -25,6 +32,33 @@ export default function CustomerListPage() {
       setError('Failed to load customers');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteCustomer(customerId: string, customerName: string) {
+    if (!confirm(`Are you sure you want to delete customer "${customerName}"?\n\nThis action cannot be undone. The customer must have no transactions to be deleted.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to delete customer');
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+
+      setSuccess('Customer deleted successfully');
+      setTimeout(() => setSuccess(''), 3000);
+      fetchCustomers(); // Refresh list
+    } catch (err) {
+      setError('An error occurred while deleting customer');
+      setTimeout(() => setError(''), 5000);
     }
   }
 
@@ -62,6 +96,18 @@ export default function CustomerListPage() {
       <Navigation />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-4">
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 rounded-md bg-green-50 p-4">
+            <p className="text-sm text-green-800">{success}</p>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center mb-4">
@@ -129,7 +175,7 @@ export default function CustomerListPage() {
                         {customer.email || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(customer.dob).toLocaleDateString()}
+                        {formatNZDate(customer.dob)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -137,7 +183,7 @@ export default function CustomerListPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(customer.createdAt).toLocaleDateString()}
+                        {formatNZDate(customer.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2">
@@ -153,6 +199,14 @@ export default function CustomerListPage() {
                           >
                             New Txn
                           </a>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteCustomer(customer.id, customer.fullName)}
+                              className="text-red-600 hover:text-red-900 font-medium"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

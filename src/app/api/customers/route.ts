@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const phone = searchParams.get('phone');
     const customerId = searchParams.get('customerId');
     const list = searchParams.get('list');
+    const search = searchParams.get('search');
 
     // If list=true, return all customers
     if (list === 'true') {
@@ -32,10 +33,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ customers });
     }
 
+    // If search param provided, do fuzzy search
+    if (search) {
+      const customers = await db.customer.findMany({
+        where: {
+          OR: [
+            { fullName: { contains: search } },
+            { firstName: { contains: search } },
+            { lastName: { contains: search } },
+            { phone: { contains: search } },
+            { customerId: { contains: search } },
+            { email: { contains: search } }
+          ]
+        },
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
+      return NextResponse.json({ customers });
+    }
+
     // Otherwise, search for specific customer
     if (!phone && !customerId) {
       return NextResponse.json(
-        { error: 'Either phone, customerId, or list=true is required' },
+        { error: 'Either phone, customerId, search, or list=true is required' },
         { status: 400 }
       );
     }

@@ -4,10 +4,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { formatNZDate, formatNZDateTime } from '@/lib/date-utils';
+import { useToast } from '@/contexts/ToastContext';
 
 export default function CustomerDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const [customer, setCustomer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,11 +58,11 @@ export default function CustomerDetailPage() {
 
       // Refresh customer data
       await fetchCustomer();
-      alert('File uploaded successfully!');
+      toast.success('ID document uploaded successfully!');
       // Reset file input
       e.target.value = '';
     } catch (err) {
-      alert('Failed to upload file');
+      toast.error('Failed to upload file. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -154,7 +157,7 @@ export default function CustomerDetailPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Date of Birth</p>
-              <p className="text-gray-900">{new Date(customer.dob).toLocaleDateString()}</p>
+              <p className="text-gray-900">{formatNZDate(customer.dob)}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Address</p>
@@ -236,7 +239,7 @@ export default function CustomerDetailPage() {
                             {getDocumentTypeLabel(idFile.documentType)}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Uploaded {new Date(idFile.createdAt).toLocaleDateString()} at {new Date(idFile.createdAt).toLocaleTimeString()}
+                            Uploaded {formatNZDateTime(idFile.createdAt)}
                           </p>
                         </div>
                         <span className="text-gray-400 text-xs">
@@ -264,7 +267,7 @@ export default function CustomerDetailPage() {
                         <p className="font-medium text-gray-900">{txn.txnNumber}</p>
                         <p className="text-sm text-gray-600">To: {txn.beneficiaryName}</p>
                         <p className="text-xs text-gray-500">
-                          {new Date(txn.createdAt).toLocaleDateString()}
+                          {formatNZDate(txn.createdAt)}
                         </p>
                       </div>
                       <div className="text-right">

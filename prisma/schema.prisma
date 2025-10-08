@@ -11,6 +11,7 @@ enum Role {
   ADMIN
   STAFF
   AML
+  AGENT
 }
 
 enum Currency {
@@ -214,4 +215,16 @@ model ActivityLog {
   @@index([type, createdAt])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+model EmailSettings {
+  id           String   @id @default(cuid())
+  enabled      Boolean  @default(false)
+  tenantId     String?  // Azure AD Tenant ID
+  clientId     String?  // Azure AD Application (Client) ID
+  clientSecret String?  // Azure AD Client Secret (encrypted)
+  senderEmail  String?  // Email address to send from
+  senderName   String?  // Display name for sender
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
