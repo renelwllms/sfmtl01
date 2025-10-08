@@ -37,6 +37,21 @@ export const TransactionSchema = z.object({
   senderEmail: z.string().email().optional().or(z.literal('')),
   occupation: z.string().optional(),
   purposeOfTransfer: z.string().optional(),
+  // Enhanced sender details for >= NZ$1,000
+  senderStreetAddress: z.string().optional(),
+  senderSuburb: z.string().optional(),
+  senderCity: z.string().optional(),
+  senderPostcode: z.string().optional(),
+  senderHomePhone: z.string().optional(),
+  senderMobilePhone: z.string().optional(),
+  // Employment Details for >= NZ$1,000
+  employerName: z.string().optional(),
+  employerAddress: z.string().optional(),
+  employerPhone: z.string().optional(),
+  // Remittance details for >= NZ$1,000
+  reasonForRemittance: z.string().optional(),
+  relationshipToBeneficiary: z.string().optional(),
+  // Money
   amountNzdCents: z.number().int().nonnegative('Amount must be positive'),
   feeNzdCents: z.number().int().nonnegative('Fee must be positive'),
   rate: z.number().positive('Rate must be positive'),
@@ -45,8 +60,11 @@ export const TransactionSchema = z.object({
   totalForeignReceived: z.number().nonnegative('Total foreign must be positive'),
   dob: dob18,
   verifiedWithOriginalId: z.boolean(),
-  proofOfAddressType: z.enum(['BILL', 'BANK_STATEMENT', 'OTHER']).optional(),
-  sourceOfFunds: z.string().optional(),
+  proofOfAddressType: z.enum(['BILL', 'BANK_STATEMENT', 'IRD_LETTER', 'GOVT_LETTER', 'POWER_BILL', 'WATER_BILL', 'COUNCIL_RATES', 'OTHER']).optional(),
+  sourceOfFunds: z.enum(['SALARY_WAGES', 'SAVINGS', 'LOAN_FUNDS', 'SALE_OF_PROPERTY', 'SELF_EMPLOYED', 'FAMILY_CONTRIBUTIONS', 'FUNDRAISING_RAFFLE', 'OTHER']).optional(),
+  sourceOfFundsDetails: z.string().optional(),
+  bankAccountDetails: z.string().optional(),
+  proofDocumentsProvided: z.string().optional(),
   id1CountryAndType: z.string().optional(),
   id1Number: z.string().optional(),
   id1IssueDate: z.coerce.date().optional(),
@@ -55,7 +73,37 @@ export const TransactionSchema = z.object({
   id2Number: z.string().optional(),
   id2IssueDate: z.coerce.date().optional(),
   id2ExpiryDate: z.coerce.date().optional()
-});
+}).refine(
+  (data) => {
+    // If transaction is >= NZ$1,000 (100,000 cents), enhanced AML fields are required
+    const requiresEnhancedAML = data.amountNzdCents >= 100000;
+
+    if (requiresEnhancedAML) {
+      return !!(
+        data.senderStreetAddress &&
+        data.senderSuburb &&
+        data.senderCity &&
+        data.senderPostcode &&
+        data.senderHomePhone &&
+        data.senderMobilePhone &&
+        data.employerName &&
+        data.employerAddress &&
+        data.employerPhone &&
+        data.reasonForRemittance &&
+        data.relationshipToBeneficiary &&
+        data.sourceOfFunds &&
+        data.bankAccountDetails &&
+        data.proofOfAddressType &&
+        data.proofDocumentsProvided
+      );
+    }
+    return true;
+  },
+  {
+    message: 'Enhanced AML fields are required for transactions >= NZ$1,000',
+    path: ['amountNzdCents']
+  }
+);
 
 export type CustomerInput = z.infer<typeof CustomerSchema>;
 export type TransactionInput = z.infer<typeof TransactionSchema>;

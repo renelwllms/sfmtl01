@@ -31,6 +31,17 @@ export default function NewTransactionPage() {
     senderEmail: '',
     occupation: '',
     purposeOfTransfer: '',
+    // Enhanced sender details for >= NZ$1,000
+    senderStreetAddress: '',
+    senderSuburb: '',
+    senderCity: '',
+    senderPostcode: '',
+    senderHomePhone: '',
+    senderMobilePhone: '',
+    // Employment Details for >= NZ$1,000
+    employerName: '',
+    employerAddress: '',
+    employerPhone: '',
     // Money
     amountNzd: '',
     feeNzd: '',
@@ -39,8 +50,13 @@ export default function NewTransactionPage() {
     // AML/KYC
     dob: '',
     verifiedWithOriginalId: false,
-    proofOfAddressType: '' as '' | 'BILL' | 'BANK_STATEMENT' | 'OTHER',
-    sourceOfFunds: '',
+    proofOfAddressType: '' as '' | 'BILL' | 'BANK_STATEMENT' | 'IRD_LETTER' | 'GOVT_LETTER' | 'POWER_BILL' | 'WATER_BILL' | 'COUNCIL_RATES' | 'OTHER',
+    sourceOfFunds: '' as '' | 'SALARY_WAGES' | 'SAVINGS' | 'LOAN_FUNDS' | 'SALE_OF_PROPERTY' | 'SELF_EMPLOYED' | 'FAMILY_CONTRIBUTIONS' | 'FUNDRAISING_RAFFLE' | 'OTHER',
+    sourceOfFundsDetails: '',
+    bankAccountDetails: '',
+    proofDocumentsProvided: '',
+    reasonForRemittance: '',
+    relationshipToBeneficiary: '',
     id1CountryAndType: '',
     id1Number: '',
     id1IssueDate: '',
@@ -131,6 +147,7 @@ export default function NewTransactionPage() {
 
   const totalPaidNzd = (parseFloat(formData.amountNzd || '0') + parseFloat(formData.feeNzd || '0')).toFixed(2);
   const totalForeign = (parseFloat(formData.amountNzd || '0') * parseFloat(formData.rate || '0')).toFixed(2);
+  const requiresEnhancedAML = parseFloat(formData.amountNzd || '0') >= 1000;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -145,7 +162,23 @@ export default function NewTransactionPage() {
         rate: parseFloat(formData.rate),
         totalPaidNzdCents: Math.round(parseFloat(totalPaidNzd) * 100),
         totalForeignReceived: parseFloat(totalForeign),
+        // Convert empty strings to undefined for optional fields
         proofOfAddressType: formData.proofOfAddressType || undefined,
+        sourceOfFunds: formData.sourceOfFunds || undefined,
+        sourceOfFundsDetails: formData.sourceOfFundsDetails || undefined,
+        bankAccountDetails: formData.bankAccountDetails || undefined,
+        proofDocumentsProvided: formData.proofDocumentsProvided || undefined,
+        reasonForRemittance: formData.reasonForRemittance || undefined,
+        relationshipToBeneficiary: formData.relationshipToBeneficiary || undefined,
+        senderStreetAddress: formData.senderStreetAddress || undefined,
+        senderSuburb: formData.senderSuburb || undefined,
+        senderCity: formData.senderCity || undefined,
+        senderPostcode: formData.senderPostcode || undefined,
+        senderHomePhone: formData.senderHomePhone || undefined,
+        senderMobilePhone: formData.senderMobilePhone || undefined,
+        employerName: formData.employerName || undefined,
+        employerAddress: formData.employerAddress || undefined,
+        employerPhone: formData.employerPhone || undefined,
         id1IssueDate: formData.id1IssueDate || undefined,
         id1ExpiryDate: formData.id1ExpiryDate || undefined,
         id2IssueDate: formData.id2IssueDate || undefined,
@@ -371,47 +404,323 @@ export default function NewTransactionPage() {
                 </div>
               </div>
 
-              {/* Additional Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Occupation</label>
-                  <input
-                    type="text"
-                    value={formData.occupation}
-                    onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
+              {/* Enhanced AML Fields for >= NZ$1,000 */}
+              {requiresEnhancedAML && (
+                <div className="bg-orange-50 p-4 rounded-md border-2 border-orange-300">
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg className="h-5 w-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <h2 className="text-lg font-semibold text-orange-900">Enhanced AML Information Required (≥ NZ$1,000)</h2>
+                  </div>
+
+                  {/* Enhanced Sender Address */}
+                  <div className="space-y-4 mb-4">
+                    <h3 className="font-medium text-gray-900">Detailed Sender Address</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Street Address <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.senderStreetAddress}
+                          onChange={(e) => setFormData({ ...formData, senderStreetAddress: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Suburb <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.senderSuburb}
+                          onChange={(e) => setFormData({ ...formData, senderSuburb: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          City <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.senderCity}
+                          onChange={(e) => setFormData({ ...formData, senderCity: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Postcode <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.senderPostcode}
+                          onChange={(e) => setFormData({ ...formData, senderPostcode: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Home Phone <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          required={requiresEnhancedAML}
+                          value={formData.senderHomePhone}
+                          onChange={(e) => setFormData({ ...formData, senderHomePhone: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Mobile Phone <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          required={requiresEnhancedAML}
+                          value={formData.senderMobilePhone}
+                          onChange={(e) => setFormData({ ...formData, senderMobilePhone: e.target.value })}
+                          placeholder={formData.senderPhone}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Employment Details */}
+                  <div className="space-y-4 mb-4">
+                    <h3 className="font-medium text-gray-900">Employment Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Employer Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.employerName}
+                          onChange={(e) => setFormData({ ...formData, employerName: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Employer Phone <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          required={requiresEnhancedAML}
+                          value={formData.employerPhone}
+                          onChange={(e) => setFormData({ ...formData, employerPhone: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Employer Address <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.employerAddress}
+                          onChange={(e) => setFormData({ ...formData, employerAddress: e.target.value })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Remittance Details */}
+                  <div className="space-y-4 mb-4">
+                    <h3 className="font-medium text-gray-900">Remittance Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Reason for Funds Remittance <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.reasonForRemittance}
+                          onChange={(e) => setFormData({ ...formData, reasonForRemittance: e.target.value })}
+                          placeholder="e.g., Family support, Education, Medical expenses"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Relationship to Beneficiary <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.relationshipToBeneficiary}
+                          onChange={(e) => setFormData({ ...formData, relationshipToBeneficiary: e.target.value })}
+                          placeholder="e.g., Parent, Sibling, Friend"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Source of Funds */}
+                  <div className="space-y-4 mb-4">
+                    <h3 className="font-medium text-gray-900">Source of Funds</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Source of Funds <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          required={requiresEnhancedAML}
+                          value={formData.sourceOfFunds}
+                          onChange={(e) => setFormData({ ...formData, sourceOfFunds: e.target.value as any })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Select...</option>
+                          <option value="SALARY_WAGES">Salary/Wages</option>
+                          <option value="SAVINGS">Savings</option>
+                          <option value="LOAN_FUNDS">Loan Funds</option>
+                          <option value="SALE_OF_PROPERTY">Sale of Property</option>
+                          <option value="SELF_EMPLOYED">Self-Employed Income</option>
+                          <option value="FAMILY_CONTRIBUTIONS">Family Contributions</option>
+                          <option value="FUNDRAISING_RAFFLE">Fundraising/Raffle</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Source of Funds Details
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.sourceOfFundsDetails}
+                          onChange={(e) => setFormData({ ...formData, sourceOfFundsDetails: e.target.value })}
+                          placeholder="Additional details if needed"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Bank Account Details <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.bankAccountDetails}
+                          onChange={(e) => setFormData({ ...formData, bankAccountDetails: e.target.value })}
+                          placeholder="Account number"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Proof of Address Type <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          required={requiresEnhancedAML}
+                          value={formData.proofOfAddressType}
+                          onChange={(e) => setFormData({ ...formData, proofOfAddressType: e.target.value as any })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Select...</option>
+                          <option value="POWER_BILL">Power Bill</option>
+                          <option value="WATER_BILL">Water Bill</option>
+                          <option value="COUNCIL_RATES">Council Rates</option>
+                          <option value="BANK_STATEMENT">Bank Statement</option>
+                          <option value="IRD_LETTER">IRD Letter</option>
+                          <option value="GOVT_LETTER">Government Letter</option>
+                          <option value="BILL">Utility Bill</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Proof/Documents Provided <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.proofDocumentsProvided}
+                          onChange={(e) => setFormData({ ...formData, proofDocumentsProvided: e.target.value })}
+                          placeholder="List all documents provided for verification"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Purpose of Transfer</label>
-                  <input
-                    type="text"
-                    value={formData.purposeOfTransfer}
-                    onChange={(e) => setFormData({ ...formData, purposeOfTransfer: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Source of Funds</label>
-                  <input
-                    type="text"
-                    value={formData.sourceOfFunds}
-                    onChange={(e) => setFormData({ ...formData, sourceOfFunds: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Proof of Address</label>
-                  <select
-                    value={formData.proofOfAddressType}
-                    onChange={(e) => setFormData({ ...formData, proofOfAddressType: e.target.value as any })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="">Select...</option>
-                    <option value="BILL">Utility Bill</option>
-                    <option value="BANK_STATEMENT">Bank Statement</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+              )}
+
+              {/* Standard Additional Details */}
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Additional Details</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Occupation</label>
+                    <input
+                      type="text"
+                      value={formData.occupation}
+                      onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Purpose of Transfer</label>
+                    <input
+                      type="text"
+                      value={formData.purposeOfTransfer}
+                      onChange={(e) => setFormData({ ...formData, purposeOfTransfer: e.target.value })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                  {!requiresEnhancedAML && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Source of Funds</label>
+                        <select
+                          value={formData.sourceOfFunds}
+                          onChange={(e) => setFormData({ ...formData, sourceOfFunds: e.target.value as any })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Select...</option>
+                          <option value="SALARY_WAGES">Salary/Wages</option>
+                          <option value="SAVINGS">Savings</option>
+                          <option value="LOAN_FUNDS">Loan Funds</option>
+                          <option value="SALE_OF_PROPERTY">Sale of Property</option>
+                          <option value="SELF_EMPLOYED">Self-Employed Income</option>
+                          <option value="FAMILY_CONTRIBUTIONS">Family Contributions</option>
+                          <option value="FUNDRAISING_RAFFLE">Fundraising/Raffle</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Proof of Address</label>
+                        <select
+                          value={formData.proofOfAddressType}
+                          onChange={(e) => setFormData({ ...formData, proofOfAddressType: e.target.value as any })}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Select...</option>
+                          <option value="POWER_BILL">Power Bill</option>
+                          <option value="WATER_BILL">Water Bill</option>
+                          <option value="COUNCIL_RATES">Council Rates</option>
+                          <option value="BANK_STATEMENT">Bank Statement</option>
+                          <option value="IRD_LETTER">IRD Letter</option>
+                          <option value="GOVT_LETTER">Government Letter</option>
+                          <option value="BILL">Utility Bill</option>
+                          <option value="OTHER">Other</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

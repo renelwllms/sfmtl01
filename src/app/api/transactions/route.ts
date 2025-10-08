@@ -163,16 +163,35 @@ export async function POST(request: NextRequest) {
         senderEmail: data.senderEmail || null,
         occupation: data.occupation || null,
         purposeOfTransfer: data.purposeOfTransfer || null,
+        // Enhanced sender details for >= NZ$1,000
+        senderStreetAddress: data.senderStreetAddress || null,
+        senderSuburb: data.senderSuburb || null,
+        senderCity: data.senderCity || null,
+        senderPostcode: data.senderPostcode || null,
+        senderHomePhone: data.senderHomePhone || null,
+        senderMobilePhone: data.senderMobilePhone || null,
+        // Employment Details for >= NZ$1,000
+        employerName: data.employerName || null,
+        employerAddress: data.employerAddress || null,
+        employerPhone: data.employerPhone || null,
+        // Remittance details for >= NZ$1,000
+        reasonForRemittance: data.reasonForRemittance || null,
+        relationshipToBeneficiary: data.relationshipToBeneficiary || null,
+        // Money
         amountNzdCents: data.amountNzdCents,
         feeNzdCents: data.feeNzdCents,
         rate: data.rate,
         currency: data.currency,
         totalPaidNzdCents: data.totalPaidNzdCents,
         totalForeignReceived: data.totalForeignReceived,
+        // AML/KYC
         dob: data.dob,
         verifiedWithOriginalId: data.verifiedWithOriginalId,
         proofOfAddressType: data.proofOfAddressType || null,
         sourceOfFunds: data.sourceOfFunds || null,
+        sourceOfFundsDetails: data.sourceOfFundsDetails || null,
+        bankAccountDetails: data.bankAccountDetails || null,
+        proofDocumentsProvided: data.proofDocumentsProvided || null,
         id1CountryAndType: data.id1CountryAndType || null,
         id1Number: data.id1Number || null,
         id1IssueDate: data.id1IssueDate || null,
@@ -181,6 +200,7 @@ export async function POST(request: NextRequest) {
         id2Number: data.id2Number || null,
         id2IssueDate: data.id2IssueDate || null,
         id2ExpiryDate: data.id2ExpiryDate || null,
+        // AML Tracking
         isPtrRequired,
         isGoAmlExportReady,
         createdById: userId
