@@ -12,7 +12,7 @@ A full-stack learner management system for remittance transactions with AML/KYC 
 
 ## Prerequisites
 
-- Node.js 20+ and npm
+- Node.js 20+ and npm (or Docker)
 - A Supabase account (free tier works)
 
 ## Setup Instructions
@@ -156,6 +156,69 @@ After seeding, you can log in with:
 |-------|--------------------------------|------------|
 | Admin | admin@samoafinance.local       | Admin@123  |
 | Staff | staff@samoafinance.local       | Staff@123  |
+
+## Docker Deployment
+
+### Quick Start with Docker
+
+The easiest way to run the application is with Docker:
+
+```bash
+# 1. Clone and navigate to the repository
+git clone <repository-url>
+cd samoa-finance-app
+
+# 2. Create .env file with your Supabase credentials
+cp .env.example .env
+# Edit .env with your Supabase connection strings
+
+# 3. Build and run with Docker Compose
+docker-compose up -d
+
+# 4. Run database migrations (first time only)
+docker exec samoa-finance-app npx prisma migrate deploy
+docker exec samoa-finance-app npx prisma db seed
+
+# 5. View logs
+docker-compose logs -f
+
+# 6. Stop the application
+docker-compose down
+```
+
+The application will be available at **http://localhost:3000**
+
+### Manual Docker Build
+
+If you prefer to build and run manually:
+
+```bash
+# Build the image
+docker build -t samoa-finance-app .
+
+# Run the container
+docker run -d \
+  --name samoa-finance-app \
+  -p 3000:3000 \
+  -e DATABASE_URL="your-database-url" \
+  -e DIRECT_URL="your-direct-url" \
+  -e NEXTAUTH_URL="http://localhost:3000" \
+  -e NEXTAUTH_SECRET="your-secret" \
+  -v $(pwd)/uploads:/app/uploads \
+  samoa-finance-app
+
+# Run migrations
+docker exec samoa-finance-app npx prisma migrate deploy
+docker exec samoa-finance-app npx prisma db seed
+```
+
+### Docker Features
+
+- ✅ Multi-stage build for minimal image size
+- ✅ Non-root user for security
+- ✅ Health checks configured
+- ✅ Persistent uploads volume
+- ✅ Production-optimized Next.js standalone output
 
 ## Production Deployment
 
