@@ -275,11 +275,22 @@ export default function NewCustomerPage() {
                       disabled={loading}
                       className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      {documentTypes.map((docType) => (
-                        <option key={docType.id} value={docType.name}>
-                          {docType.label}
-                        </option>
-                      ))}
+                      {documentTypes.length === 0 ? (
+                        <>
+                          <option value="DRIVERS_LICENSE">Driver's License</option>
+                          <option value="PASSPORT">Passport</option>
+                          <option value="NATIONAL_ID">National ID</option>
+                          <option value="BANK_CARD">Bank Card</option>
+                          <option value="BIRTH_CERTIFICATE">Birth Certificate</option>
+                          <option value="OTHER">Other</option>
+                        </>
+                      ) : (
+                        documentTypes.map((docType) => (
+                          <option key={docType.id} value={docType.name}>
+                            {docType.label}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 

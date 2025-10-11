@@ -24,7 +24,7 @@ interface Transaction {
   };
   createdBy: {
     email: string;
-  };
+  } | null;
 }
 
 interface Pagination {
@@ -267,7 +267,7 @@ export default function AllTransactionsPage() {
                           <div className="text-sm text-gray-900">{txn.currency} {txn.totalForeignReceived.toFixed(2)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {txn.createdBy.email}
+                          {txn.createdBy?.email || 'N/A'}
                         </td>
                       </tr>
                     ))}

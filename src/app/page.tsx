@@ -12,7 +12,8 @@ export default function Dashboard() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'phone' | 'customerId'>('phone');
-  const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [searching, setSearching] = useState(false);
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -41,21 +42,50 @@ export default function Dashboard() {
     }
   }
 
+  async function searchCustomers(term: string) {
+    if (term.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      setSearchError('');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/customers?search=${encodeURIComponent(term)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.customers || []);
+        setShowResults(true);
+        setSearchError('');
+      }
+    } catch (err) {
+      console.error('Search failed:', err);
+    }
+  }
+
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!searchTerm) return;
 
     setSearching(true);
     setSearchError('');
-    setSearchResult(null);
 
     try {
-      const param = searchType === 'phone' ? `phone=${searchTerm}` : `customerId=${searchTerm}`;
-      const response = await fetch(`/api/customers?${param}`);
+      const response = await fetch(`/api/customers?search=${encodeURIComponent(searchTerm)}`);
 
       if (response.ok) {
         const data = await response.json();
-        setSearchResult(data.customer);
+        const customers = data.customers || [];
+
+        if (customers.length === 0) {
+          setSearchError('No customers found');
+          setSearchResults([]);
+          setShowResults(false);
+        } else {
+          setSearchResults(customers);
+          setShowResults(true);
+          setSearchError('');
+        }
       } else {
         setSearchError('Customer not found');
       }
@@ -80,6 +110,71 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Quick Search Section */}
+        <div className="bg-white p-6 rounded-lg shadow mb-8">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Search</h2>
+          <form onSubmit={handleSearch} className="space-y-4">
+            <div className="relative">
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                Search for customer
+              </label>
+              <div className="flex gap-4">
+                <div className="flex-1 relative">
+                  <input
+                    id="search"
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      searchCustomers(e.target.value);
+                    }}
+                    placeholder="Search by name, phone, or customer ID..."
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {showResults && searchResults.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {searchResults.map((cust) => (
+                        <button
+                          key={cust.id}
+                          type="button"
+                          onClick={() => {
+                            router.push(`/customers/${cust.id}`);
+                            setSearchTerm('');
+                            setSearchResults([]);
+                            setShowResults(false);
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-semibold text-gray-900">{cust.fullName}</div>
+                          <div className="text-sm text-gray-600">{cust.phone}</div>
+                          <div className="text-xs text-gray-500">{cust.customerId}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={searching}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                >
+                  {searching ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+              <p className="text-sm text-gray-500 mt-2">
+                Type to search by name, phone, or any part of customer ID. Press Enter or Search button if no results appear.
+              </p>
+            </div>
+          </form>
+
+          {/* Search Error */}
+          {searchError && (
+            <div className="mt-4 rounded-md bg-red-50 p-4">
+              <p className="text-sm text-red-800">{searchError}</p>
+            </div>
+          )}
+        </div>
+
         {/* Summary Cards */}
         {!loadingDashboard && dashboardData && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -241,90 +336,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-
-        {/* Search Section */}
-        <div className="bg-white p-6 rounded-lg shadow mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Search</h2>
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                  Search for customer
-                </label>
-                <input
-                  id="search"
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={searchType === 'phone' ? 'Enter phone number (e.g., +6421234567)' : 'Enter customer ID (e.g., SFMTL0001)'}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div className="w-48">
-                <label htmlFor="searchType" className="block text-sm font-medium text-gray-700 mb-1">
-                  Search by
-                </label>
-                <select
-                  id="searchType"
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value as 'phone' | 'customerId')}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="phone">Phone</option>
-                  <option value="customerId">Customer ID</option>
-                </select>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={searching}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
-            >
-              {searching ? 'Searching...' : 'Search'}
-            </button>
-          </form>
-
-          {/* Search Results */}
-          {searchError && (
-            <div className="mt-4 rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{searchError}</p>
-            </div>
-          )}
-
-          {searchResult && (
-            <div className="mt-4 bg-green-50 p-4 rounded-md">
-              <h3 className="font-semibold text-gray-900 mb-2">Customer Found!</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                <div>
-                  <span className="text-gray-600">Name:</span> <span className="font-medium">{searchResult.fullName}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">ID:</span> <span className="font-medium">{searchResult.customerId}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Phone:</span> <span className="font-medium">{searchResult.phone}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Email:</span> <span className="font-medium">{searchResult.email || 'N/A'}</span>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <a
-                  href={`/customers/${searchResult.id}`}
-                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  View Details
-                </a>
-                <a
-                  href={`/transactions/new?customerId=${searchResult.id}`}
-                  className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
-                >
-                  New Transaction
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
 
       </main>
     </div>

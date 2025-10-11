@@ -27,21 +27,32 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where: any = {};
+
+    // Build AND conditions array
+    const andConditions: any[] = [];
+
     if (customerId) {
-      where.customerId = customerId;
+      andConditions.push({ customerId: customerId });
     }
 
     if (currency) {
-      where.currency = currency;
+      andConditions.push({ currency: currency });
     }
 
     if (searchTerm) {
-      where.OR = [
-        { customer: { fullName: { contains: searchTerm, mode: 'insensitive' } } },
-        { customer: { customerId: { contains: searchTerm, mode: 'insensitive' } } },
-        { beneficiaryName: { contains: searchTerm, mode: 'insensitive' } },
-        { txnNumber: { contains: searchTerm, mode: 'insensitive' } }
-      ];
+      andConditions.push({
+        OR: [
+          { customer: { fullName: { contains: searchTerm, mode: 'insensitive' } } },
+          { customer: { customerId: { contains: searchTerm, mode: 'insensitive' } } },
+          { beneficiaryName: { contains: searchTerm, mode: 'insensitive' } },
+          { txnNumber: { contains: searchTerm, mode: 'insensitive' } }
+        ]
+      });
+    }
+
+    // Combine all conditions with AND
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     // Build orderBy
@@ -114,14 +125,15 @@ export async function POST(request: NextRequest) {
 
     const userId = (session.user as any).id;
 
-    // Verify user exists
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID not found in session' }, { status: 400 });
-    }
-
-    const user = await db.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
+    // Verify user exists in database (if userId is provided)
+    let validUserId: string | null = null;
+    if (userId) {
+      const user = await db.user.findUnique({
+        where: { id: userId }
+      });
+      if (user) {
+        validUserId = userId;
+      }
     }
 
     const body = await request.json();
@@ -214,7 +226,7 @@ export async function POST(request: NextRequest) {
         // AML Tracking
         isPtrRequired,
         isGoAmlExportReady,
-        createdById: userId
+        createdById: validUserId
       },
       include: {
         customer: {
@@ -232,7 +244,7 @@ export async function POST(request: NextRequest) {
       'TRANSACTION_CREATED',
       transaction.id,
       transaction.txnNumber,
-      userId,
+      validUserId || undefined,
       (session.user as any).email,
       `Transaction ${transaction.txnNumber} created for customer ${customer.fullName} - ${data.currency} ${data.totalForeignReceived.toFixed(2)}`,
       {

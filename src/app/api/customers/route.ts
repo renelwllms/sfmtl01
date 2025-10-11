@@ -38,12 +38,12 @@ export async function GET(request: NextRequest) {
       const customers = await db.customer.findMany({
         where: {
           OR: [
-            { fullName: { contains: search } },
-            { firstName: { contains: search } },
-            { lastName: { contains: search } },
+            { fullName: { contains: search, mode: 'insensitive' } },
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
             { phone: { contains: search } },
-            { customerId: { contains: search } },
-            { email: { contains: search } }
+            { customerId: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } }
           ]
         },
         take: 10,

@@ -12,6 +12,7 @@ export default function NewTransactionPage() {
   const toast = useToast();
 
   const [loading, setLoading] = useState(false);
+  const [loadingCustomer, setLoadingCustomer] = useState(!!preselectedCustomerId);
   const [error, setError] = useState('');
   const [customer, setCustomer] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +32,7 @@ export default function NewTransactionPage() {
   const [idFiles, setIdFiles] = useState<File[]>([]);
   const [idDocType, setIdDocType] = useState('DRIVERS_LICENSE');
   const [uploadingIds, setUploadingIds] = useState(false);
+  const [selectedProofDocs, setSelectedProofDocs] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     customerId: '',
@@ -92,7 +94,7 @@ export default function NewTransactionPage() {
   }, []);
 
   useEffect(() => {
-    if (rates && formData.currency) {
+    if (rates && rates.rates && formData.currency) {
       const rateKey = `NZD_${formData.currency}` as 'NZD_WST' | 'NZD_AUD' | 'NZD_USD';
       setFormData(prev => ({ ...prev, rate: rates.rates[rateKey].toString() }));
     }
@@ -109,6 +111,7 @@ export default function NewTransactionPage() {
   }
 
   async function fetchCustomer(id: string) {
+    setLoadingCustomer(true);
     try {
       const response = await fetch(`/api/customers/${id}`);
       if (response.ok) {
@@ -127,6 +130,8 @@ export default function NewTransactionPage() {
       }
     } catch (err) {
       console.error('Failed to fetch customer');
+    } finally {
+      setLoadingCustomer(false);
     }
   }
 
@@ -149,20 +154,26 @@ export default function NewTransactionPage() {
     }
   }
 
-  function selectCustomer(cust: any) {
-    setCustomer(cust);
+  async function selectCustomer(cust: any) {
+    // If customer doesn't have IDs, fetch full customer details
+    if (!cust.ids) {
+      await fetchCustomer(cust.id);
+    } else {
+      setCustomer(cust);
+      setFormData(prev => ({
+        ...prev,
+        customerId: cust.id,
+        senderName: cust.fullName,
+        senderAddress: cust.address || '',
+        senderPhone: cust.phone,
+        senderEmail: cust.email || '',
+        dob: cust.dob.split('T')[0]
+      }));
+    }
+
     setSearchTerm('');
     setSearchResults([]);
     setShowResults(false);
-    setFormData(prev => ({
-      ...prev,
-      customerId: cust.id,
-      senderName: cust.fullName,
-      senderAddress: cust.address || '',
-      senderPhone: cust.phone,
-      senderEmail: cust.email || '',
-      dob: cust.dob.split('T')[0]
-    }));
     setError('');
   }
 
@@ -171,14 +182,25 @@ export default function NewTransactionPage() {
     if (!searchTerm) return;
 
     try {
-      const isPhone = searchTerm.startsWith('+');
-      const param = isPhone ? `phone=${searchTerm}` : `customerId=${searchTerm}`;
-      const response = await fetch(`/api/customers?${param}`);
+      // Always use fuzzy search for better UX
+      const response = await fetch(`/api/customers?search=${encodeURIComponent(searchTerm)}`);
 
       if (response.ok) {
         const data = await response.json();
-        const cust = data.customer;
-        selectCustomer(cust);
+        const customers = data.customers || [];
+
+        if (customers.length === 0) {
+          setError('No customers found');
+          setCustomer(null);
+          setSearchResults([]);
+        } else if (customers.length === 1) {
+          // If only one result, auto-select it
+          selectCustomer(customers[0]);
+        } else {
+          // Show results dropdown if multiple matches
+          setSearchResults(customers);
+          setShowResults(true);
+        }
       } else {
         setError('Customer not found');
         setCustomer(null);
@@ -268,6 +290,23 @@ export default function NewTransactionPage() {
     setIdFiles(files => files.filter((_, i) => i !== index));
   }
 
+  function handleProofDocToggle(docType: string) {
+    setSelectedProofDocs(prev => {
+      const updated = prev.includes(docType)
+        ? prev.filter(d => d !== docType)
+        : [...prev, docType];
+
+      // Update formData.proofDocumentsProvided with comma-separated list
+      const proofDocsText = updated.map(type => type.replace(/_/g, ' ')).join(', ');
+      setFormData(prevForm => ({ ...prevForm, proofDocumentsProvided: proofDocsText }));
+
+      return updated;
+    });
+  }
+
+  // Get available ID types from customer's uploaded documents
+  const availableIdTypes = customer?.ids?.map((doc: any) => doc.documentType) || [];
+
   const totalPaidNzd = (parseFloat(formData.amountNzd || '0') + parseFloat(formData.feeNzd || '0')).toFixed(2);
   const totalForeign = (parseFloat(formData.amountNzd || '0') * parseFloat(formData.rate || '0')).toFixed(2);
   const requiresEnhancedAML = parseFloat(formData.amountNzd || '0') >= 1000;
@@ -342,8 +381,20 @@ export default function NewTransactionPage() {
         <div className="bg-white p-6 rounded-lg shadow">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">New Transaction</h1>
 
+          {/* Loading Customer */}
+          {loadingCustomer && !customer && (
+            <div className="mb-6 pb-6 border-b">
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3"></div>
+                  <p className="text-gray-600">Loading customer...</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Customer Search */}
-          {!customer && (
+          {!customer && !loadingCustomer && (
             <div className="mb-6 pb-6 border-b">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold">Select Customer</h2>
@@ -393,7 +444,7 @@ export default function NewTransactionPage() {
                   </button>
                 </form>
                 <p className="text-sm text-gray-500 mt-2">
-                  Or search by exact phone (+6421234567) or customer ID
+                  Type to search by name, phone, or any part of customer ID. Press Enter or Search button if no results appear.
                 </p>
               </div>
             </div>
@@ -721,17 +772,17 @@ export default function NewTransactionPage() {
 
                   {/* Remittance Details */}
                   <div className="space-y-4 mb-4">
-                    <h3 className="font-medium text-gray-900">Remittance Details</h3>
+                    <h3 className="font-medium text-gray-900">Remittance & Personal Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Reason for Funds Remittance <span className="text-red-500">*</span>
+                          Purpose of Transfer / Reason for Remittance <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
                           required={requiresEnhancedAML}
-                          value={formData.reasonForRemittance}
-                          onChange={(e) => setFormData({ ...formData, reasonForRemittance: e.target.value })}
+                          value={formData.reasonForRemittance || formData.purposeOfTransfer}
+                          onChange={(e) => setFormData({ ...formData, reasonForRemittance: e.target.value, purposeOfTransfer: e.target.value })}
                           placeholder="e.g., Family support, Education, Medical expenses"
                           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                         />
@@ -746,6 +797,19 @@ export default function NewTransactionPage() {
                           value={formData.relationshipToBeneficiary}
                           onChange={(e) => setFormData({ ...formData, relationshipToBeneficiary: e.target.value })}
                           placeholder="e.g., Parent, Sibling, Friend"
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Occupation <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required={requiresEnhancedAML}
+                          value={formData.occupation}
+                          onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                          placeholder="e.g., Teacher, Builder, Self-employed"
                           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                         />
                       </div>
@@ -824,87 +888,115 @@ export default function NewTransactionPage() {
                         </select>
                       </div>
                       <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Proof/Documents Provided <span className="text-red-500">*</span>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          ID Documents Provided <span className="text-red-500">*</span>
                         </label>
+                        <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-md border border-gray-200">
+                          {['DRIVERS_LICENSE', 'PASSPORT', 'NATIONAL_ID', 'BANK_CARD', 'BIRTH_CERTIFICATE', 'OTHER'].map((idType) => {
+                            const isAvailable = availableIdTypes.includes(idType);
+                            const isChecked = selectedProofDocs.includes(idType);
+                            const label = idType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+                            return (
+                              <div key={idType} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  id={`proof-${idType}`}
+                                  checked={isChecked}
+                                  disabled={!isAvailable}
+                                  onChange={() => handleProofDocToggle(idType)}
+                                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                                />
+                                <label
+                                  htmlFor={`proof-${idType}`}
+                                  className={`ml-2 text-sm ${isAvailable ? 'text-gray-900 cursor-pointer' : 'text-gray-400 cursor-not-allowed'}`}
+                                >
+                                  {label}
+                                  {isAvailable && <span className="ml-1 text-green-600">✓</span>}
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
                         <input
-                          type="text"
+                          type="hidden"
                           required={requiresEnhancedAML}
                           value={formData.proofDocumentsProvided}
-                          onChange={(e) => setFormData({ ...formData, proofDocumentsProvided: e.target.value })}
-                          placeholder="List all documents provided for verification"
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                         />
+                        {requiresEnhancedAML && selectedProofDocs.length === 0 && (
+                          <p className="mt-1 text-sm text-red-600">Please select at least one ID document</p>
+                        )}
+                        {availableIdTypes.length === 0 && (
+                          <p className="mt-2 text-sm text-amber-600">⚠️ No ID documents uploaded for this customer</p>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Standard Additional Details */}
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Additional Details</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Occupation</label>
-                    <input
-                      type="text"
-                      value={formData.occupation}
-                      onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
+              {/* Standard Additional Details (only shown for < NZ$1,000) */}
+              {!requiresEnhancedAML && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">Additional Details</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Occupation</label>
+                      <input
+                        type="text"
+                        value={formData.occupation}
+                        onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Purpose of Transfer</label>
+                      <input
+                        type="text"
+                        value={formData.purposeOfTransfer}
+                        onChange={(e) => setFormData({ ...formData, purposeOfTransfer: e.target.value })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Source of Funds</label>
+                      <select
+                        value={formData.sourceOfFunds}
+                        onChange={(e) => setFormData({ ...formData, sourceOfFunds: e.target.value as any })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Select...</option>
+                        <option value="SALARY_WAGES">Salary/Wages</option>
+                        <option value="SAVINGS">Savings</option>
+                        <option value="LOAN_FUNDS">Loan Funds</option>
+                        <option value="SALE_OF_PROPERTY">Sale of Property</option>
+                        <option value="SELF_EMPLOYED">Self-Employed Income</option>
+                        <option value="FAMILY_CONTRIBUTIONS">Family Contributions</option>
+                        <option value="FUNDRAISING_RAFFLE">Fundraising/Raffle</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Proof of Address</label>
+                      <select
+                        value={formData.proofOfAddressType}
+                        onChange={(e) => setFormData({ ...formData, proofOfAddressType: e.target.value as any })}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Select...</option>
+                        <option value="POWER_BILL">Power Bill</option>
+                        <option value="WATER_BILL">Water Bill</option>
+                        <option value="COUNCIL_RATES">Council Rates</option>
+                        <option value="BANK_STATEMENT">Bank Statement</option>
+                        <option value="IRD_LETTER">IRD Letter</option>
+                        <option value="GOVT_LETTER">Government Letter</option>
+                        <option value="BILL">Utility Bill</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Purpose of Transfer</label>
-                    <input
-                      type="text"
-                      value={formData.purposeOfTransfer}
-                      onChange={(e) => setFormData({ ...formData, purposeOfTransfer: e.target.value })}
-                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                    />
-                  </div>
-                  {!requiresEnhancedAML && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Source of Funds</label>
-                        <select
-                          value={formData.sourceOfFunds}
-                          onChange={(e) => setFormData({ ...formData, sourceOfFunds: e.target.value as any })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                        >
-                          <option value="">Select...</option>
-                          <option value="SALARY_WAGES">Salary/Wages</option>
-                          <option value="SAVINGS">Savings</option>
-                          <option value="LOAN_FUNDS">Loan Funds</option>
-                          <option value="SALE_OF_PROPERTY">Sale of Property</option>
-                          <option value="SELF_EMPLOYED">Self-Employed Income</option>
-                          <option value="FAMILY_CONTRIBUTIONS">Family Contributions</option>
-                          <option value="FUNDRAISING_RAFFLE">Fundraising/Raffle</option>
-                          <option value="OTHER">Other</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Proof of Address</label>
-                        <select
-                          value={formData.proofOfAddressType}
-                          onChange={(e) => setFormData({ ...formData, proofOfAddressType: e.target.value as any })}
-                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-                        >
-                          <option value="">Select...</option>
-                          <option value="POWER_BILL">Power Bill</option>
-                          <option value="WATER_BILL">Water Bill</option>
-                          <option value="COUNCIL_RATES">Council Rates</option>
-                          <option value="BANK_STATEMENT">Bank Statement</option>
-                          <option value="IRD_LETTER">IRD Letter</option>
-                          <option value="GOVT_LETTER">Government Letter</option>
-                          <option value="BILL">Utility Bill</option>
-                          <option value="OTHER">Other</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
                 </div>
-              </div>
+              )}
 
               {/* Verification */}
               <div className="flex items-center">

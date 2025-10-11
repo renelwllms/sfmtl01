@@ -147,8 +147,8 @@ model Transaction {
   isPtrRequired          Boolean         @default(false) // PTR required for >= NZD 1,000
   isGoAmlExportReady     Boolean         @default(false) // Ready for goAML export
   goAmlExportedAt        DateTime?       // When exported to goAML
-  createdBy              User            @relation("TransactionCreatedBy", fields: [createdById], references: [id])
-  createdById            String
+  createdBy              User?           @relation("TransactionCreatedBy", fields: [createdById], references: [id])
+  createdById            String?
   createdAt              DateTime        @default(now())
 
   @@index([customerId, date])
