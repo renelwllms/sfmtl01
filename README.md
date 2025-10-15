@@ -12,14 +12,35 @@ A full-stack learner management system for remittance transactions with AML/KYC 
 
 ## Prerequisites
 
-### Option A: Docker (Recommended - Easiest Setup)
+### Option A: Automated Ubuntu Setup (Easiest for Ubuntu/Debian)
+- Ubuntu 20.04+ or Debian-based Linux
+- Root/sudo access
+- See [UBUNTU_SETUP.md](./UBUNTU_SETUP.md) for one-command installation
+
+### Option B: Docker (Recommended for other systems)
 - Docker and Docker Compose installed
 
-### Option B: Manual Setup
+### Option C: Manual Setup
 - Node.js 20+ and npm
 - PostgreSQL 16+ (or Supabase account)
 
 ## Setup Instructions
+
+### Quick Start (Ubuntu/Debian)
+
+For Ubuntu or Debian-based systems, use the automated setup script:
+
+```bash
+wget https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/setup-ubuntu.sh
+chmod +x setup-ubuntu.sh
+sudo ./setup-ubuntu.sh
+```
+
+The script will install everything (PostgreSQL, Node.js, dependencies) and configure the entire application automatically. See [UBUNTU_SETUP.md](./UBUNTU_SETUP.md) for details.
+
+---
+
+### Manual Setup
 
 ### 1. Clone the Repository
 
