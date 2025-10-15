@@ -12,8 +12,12 @@ A full-stack learner management system for remittance transactions with AML/KYC 
 
 ## Prerequisites
 
-- Node.js 20+ and npm (or Docker)
-- A Supabase account (free tier works)
+### Option A: Docker (Recommended - Easiest Setup)
+- Docker and Docker Compose installed
+
+### Option B: Manual Setup
+- Node.js 20+ and npm
+- PostgreSQL 16+ (or Supabase account)
 
 ## Setup Instructions
 
@@ -30,7 +34,30 @@ cd samoa-finance-app
 npm install
 ```
 
-### 3. Set Up Supabase Database
+### 3. Set Up Database
+
+#### Option A: Local PostgreSQL (Recommended for PC Setup)
+
+If you have PostgreSQL installed on your PC:
+
+1. Create a new database:
+```bash
+# Login to PostgreSQL (adjust for your installation)
+psql -U postgres
+
+# Create database
+CREATE DATABASE samoa_finance;
+\q
+```
+
+2. Note your PostgreSQL credentials:
+   - Host: `localhost`
+   - Port: `5432` (default)
+   - Database: `samoa_finance`
+   - User: `postgres` (or your PostgreSQL user)
+   - Password: (your PostgreSQL password)
+
+#### Option B: Supabase (Cloud Database)
 
 1. Go to [https://supabase.com](https://supabase.com) and create a new project
 2. Wait for the database to provision (~2 minutes)
@@ -45,8 +72,19 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Update `.env` with your Supabase credentials:
+Update `.env` based on your database choice:
 
+**For Local PostgreSQL:**
+```env
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/samoa_finance"
+DIRECT_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/samoa_finance"
+
+NEXTAUTH_URL=http://localhost:3000
+# Generate with: openssl rand -base64 32
+NEXTAUTH_SECRET=your-generated-secret-here
+```
+
+**For Supabase:**
 ```env
 # Get connection strings from Supabase Dashboard → Settings → Database
 DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?pgbouncer=true&connection_limit=1"
@@ -159,9 +197,56 @@ After seeding, you can log in with:
 
 ## Docker Deployment
 
-### Quick Start with Docker
+### Option 1: Docker with Local PostgreSQL (Recommended for New PC)
 
-The easiest way to run the application is with Docker:
+This is the **easiest way** to run the application on a new PC with everything included:
+
+```bash
+# 1. Clone and navigate to the repository
+git clone <repository-url>
+cd samoa-finance-app
+
+# 2. Create .env file (uses local PostgreSQL by default)
+cp .env.example .env
+
+# 3. Generate a secure NEXTAUTH_SECRET
+openssl rand -base64 32
+# Copy the output and update NEXTAUTH_SECRET in .env
+
+# 4. Start PostgreSQL database and application
+docker-compose up -d
+
+# 5. Wait ~10 seconds for database to initialize, then run migrations
+docker exec samoa-finance-app npx prisma migrate deploy
+docker exec samoa-finance-app npx prisma db seed
+
+# 6. View logs
+docker-compose logs -f
+
+# 7. Stop the application
+docker-compose down
+```
+
+The application will be available at **http://localhost:3000**
+
+**What's included:**
+- PostgreSQL 16 database (local container)
+- Next.js application
+- Persistent data storage (survives container restarts)
+- Health checks for both services
+
+**Database credentials (default):**
+- Host: `localhost` (or `postgres` from inside containers)
+- Port: `5432`
+- Database: `samoa_finance`
+- User: `postgres`
+- Password: `postgres`
+
+You can customize these in `.env` file.
+
+### Option 2: Docker with Supabase (Cloud Database)
+
+If you prefer using Supabase cloud database:
 
 ```bash
 # 1. Clone and navigate to the repository
