@@ -2,7 +2,15 @@
   "permissions": {
     "allow": [
       "Bash(npm run dev)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Read(//c/temp/cursorrepo/sfmtl/**)",
+      "Bash(node app.js)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(timeout:*)",
+      "Bash(exit 0)"
     ],
     "deny": [],
     "ask": []
