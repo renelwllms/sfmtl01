@@ -6,7 +6,7 @@ A full-stack finance management system for remittance transactions with AML/KYC 
 
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
-- **Database**: PostgreSQL (Supabase or self-hosted)
+- **Database**: PostgreSQL (self-hosted)
 - **Authentication**: NextAuth.js
 - **ORM**: Prisma
 
@@ -84,7 +84,7 @@ After deployment, log in with:
 ### Prerequisites
 
 - Node.js 20+ and npm
-- PostgreSQL 16+ (or Supabase account)
+- PostgreSQL 16+
 
 ### Local Development
 
@@ -102,9 +102,7 @@ npm install
 3. Set up database:
 ```bash
 # Create PostgreSQL database
-createdb sfmtl_finance
-
-# Or use Supabase - get connection string from dashboard
+createdb samoa_finance
 ```
 
 4. Configure environment:
