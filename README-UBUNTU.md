@@ -1,6 +1,6 @@
 # SFMTL Finance App - Ubuntu Deployment Guide
 
-Complete guide for deploying the SFMTL Finance Application on Ubuntu Server with Nginx reverse proxy and SSL.
+Complete guide for deploying the SFMTL Finance Application on Ubuntu Server with external Nginx Proxy Manager.
 
 ## Table of Contents
 - [Quick Start](#quick-start)
@@ -25,12 +25,13 @@ sudo ./deploy-ubuntu.sh
 The script will automatically:
 - Install PostgreSQL 16
 - Install Node.js 20
-- Install and configure Nginx
-- Setup SSL with Let's Encrypt
 - Clone the repository
 - Configure the database
 - Build and deploy the application
 - Create systemd service for auto-start
+- Open firewall port 3000
+
+**Note:** This script does NOT install Nginx. You need to configure your external Nginx Proxy Manager to point to port 3000.
 
 ## Prerequisites
 
@@ -82,22 +83,29 @@ sudo ./deploy-ubuntu.sh
 The script will:
 1. Install all dependencies
 2. Setup PostgreSQL database
-3. Configure Nginx reverse proxy
-4. Create systemd service
-5. Setup firewall rules
-6. Optionally configure SSL certificate
+3. Create systemd service
+4. Setup firewall rules (opens port 3000)
 
-### Step 4: SSL Certificate (if not done automatically)
+### Step 4: Configure External Nginx Proxy Manager
 
-```bash
-# Install SSL certificate manually
-sudo certbot --nginx -d sfmtl.edgepoint.co.nz
-```
+After deployment, configure your Nginx Proxy Manager:
 
-Follow the prompts to:
-- Enter your email address
-- Agree to Terms of Service
-- Choose to redirect HTTP to HTTPS (recommended)
+1. **Add Proxy Host**:
+   - Domain: `sfmtl.edgepoint.co.nz`
+   - Scheme: `http`
+   - Forward Hostname/IP: `localhost` (or server IP if remote)
+   - Forward Port: `3000`
+
+2. **Custom Nginx Configuration** (Advanced tab):
+   ```nginx
+   client_max_body_size 50M;
+   proxy_set_header X-Forwarded-Proto $scheme;
+   ```
+
+3. **SSL Certificate**:
+   - Request SSL certificate via Let's Encrypt
+   - Enable Force SSL
+   - Enable HTTP/2 Support
 
 ## Post-Deployment
 
@@ -110,10 +118,10 @@ sudo systemctl status sfmtl
 # Check application logs
 sudo journalctl -u sfmtl -f
 
-# Check Nginx status
-sudo systemctl status nginx
+# Test if app is running on port 3000
+curl http://localhost:3000
 
-# Test SSL certificate
+# Test via domain (after configuring Nginx Proxy Manager)
 curl -I https://sfmtl.edgepoint.co.nz
 ```
 
@@ -188,9 +196,6 @@ sudo journalctl -u sfmtl --since "2025-01-01"
 tail -f /var/log/sfmtl/app.log
 tail -f /var/log/sfmtl/error.log
 
-# Nginx logs
-tail -f /var/log/nginx/sfmtl.access.log
-tail -f /var/log/nginx/sfmtl.error.log
 ```
 
 ### Database Management
@@ -211,42 +216,10 @@ sudo -u sfmtl npx prisma studio
 # Access at http://localhost:5555
 ```
 
-### Nginx Management
+### Nginx Proxy Manager
 
-```bash
-# Test configuration
-sudo nginx -t
-
-# Reload configuration (no downtime)
-sudo nginx -s reload
-
-# Restart Nginx
-sudo systemctl restart nginx
-
-# Edit Nginx config
-sudo nano /etc/nginx/sites-available/sfmtl
-```
-
-### SSL Certificate Management
-
-```bash
-# Renew certificates manually
-sudo certbot renew
-
-# Test renewal (dry run)
-sudo certbot renew --dry-run
-
-# View certificate info
-sudo certbot certificates
-
-# Renew specific domain
-sudo certbot renew --cert-name sfmtl.edgepoint.co.nz
-```
-
-Certificates auto-renew via systemd timer. Check status:
-```bash
-sudo systemctl status certbot.timer
-```
+All reverse proxy and SSL management is handled by your external Nginx Proxy Manager.
+For Nginx configuration, logs, and SSL certificates, please refer to your Nginx Proxy Manager documentation.
 
 ## Updates
 
@@ -334,7 +307,7 @@ sudo tail -f /var/log/postgresql/postgresql-16-main.log
 
 ### 502 Bad Gateway Error
 
-This means Nginx can't connect to the application:
+If you see 502 errors from your Nginx Proxy Manager:
 
 ```bash
 # Check if application is running
@@ -343,30 +316,23 @@ sudo systemctl status sfmtl
 # Check if app is listening on port 3000
 sudo netstat -tulpn | grep 3000
 
-# Restart both services
+# Restart application
 sudo systemctl restart sfmtl
-sudo systemctl restart nginx
 
 # Check logs
 sudo journalctl -u sfmtl -f
-tail -f /var/log/nginx/sfmtl.error.log
+tail -f /var/log/sfmtl/error.log
 ```
+
+Verify your Nginx Proxy Manager configuration:
+- Correct forward hostname/IP
+- Forward port is 3000
+- Proxy host is online
 
 ### SSL Certificate Issues
 
-```bash
-# Check certificate expiry
-sudo certbot certificates
-
-# Force renew
-sudo certbot renew --force-renewal
-
-# Check Nginx SSL configuration
-sudo nginx -t
-
-# View SSL error logs
-tail -f /var/log/letsencrypt/letsencrypt.log
-```
+SSL certificates are managed by your external Nginx Proxy Manager.
+Please refer to your Nginx Proxy Manager documentation for SSL troubleshooting.
 
 ### High Memory Usage
 
@@ -408,9 +374,6 @@ sudo -u sfmtl npm cache clean --force
 | Configuration | `/opt/sfmtl/.env` |
 | Deployment Info | `/opt/sfmtl/DEPLOYMENT_INFO.txt` |
 | App Logs | `/var/log/sfmtl/` |
-| Nginx Config | `/etc/nginx/sites-available/sfmtl` |
-| Nginx Logs | `/var/log/nginx/sfmtl.*.log` |
-| SSL Certificates | `/etc/letsencrypt/live/sfmtl.edgepoint.co.nz/` |
 | Systemd Service | `/etc/systemd/system/sfmtl.service` |
 | Uploads | `/opt/sfmtl/uploads/` |
 
@@ -429,7 +392,7 @@ sudo -u sfmtl npm cache clean --force
 3. **Configure Firewall**
    ```bash
    sudo ufw status
-   sudo ufw allow 'Nginx Full'
+   sudo ufw allow 3000/tcp
    sudo ufw allow 'OpenSSH'
    sudo ufw enable
    ```
@@ -448,34 +411,24 @@ sudo -u sfmtl npm cache clean --force
    ```
 
 6. **SSL Certificate Monitoring**
-   ```bash
-   # Certificates auto-renew, but verify:
-   sudo systemctl status certbot.timer
-   ```
+   - SSL certificates are managed by your external Nginx Proxy Manager
+   - Ensure auto-renewal is configured in your Nginx Proxy Manager
 
 ## Performance Optimization
 
-### Enable HTTP/2
+### Nginx Proxy Manager Settings
 
-HTTP/2 is already enabled in the Nginx configuration. Verify:
-```bash
-curl -I https://sfmtl.edgepoint.co.nz | grep HTTP
-```
+Configure these in your Nginx Proxy Manager for optimal performance:
 
-### Enable Gzip Compression
-
-Add to `/etc/nginx/nginx.conf`:
-```nginx
-gzip on;
-gzip_vary on;
-gzip_min_length 1024;
-gzip_types text/plain text/css text/xml text/javascript application/javascript application/json;
-```
-
-Then reload:
-```bash
-sudo nginx -s reload
-```
+1. **Enable HTTP/2** in SSL settings
+2. **Enable Gzip Compression** (Custom Nginx Configuration):
+   ```nginx
+   gzip on;
+   gzip_vary on;
+   gzip_min_length 1024;
+   gzip_types text/plain text/css text/xml text/javascript application/javascript application/json;
+   ```
+3. **Enable caching** for static assets
 
 ### Database Optimization
 
@@ -518,13 +471,8 @@ sudo systemctl disable sfmtl
 sudo rm /etc/systemd/system/sfmtl.service
 sudo systemctl daemon-reload
 
-# Remove Nginx configuration
-sudo rm /etc/nginx/sites-enabled/sfmtl
-sudo rm /etc/nginx/sites-available/sfmtl
-sudo nginx -s reload
-
-# Remove SSL certificate
-sudo certbot delete --cert-name sfmtl.edgepoint.co.nz
+# Remove from Nginx Proxy Manager
+# (Delete proxy host from your Nginx Proxy Manager interface)
 
 # Remove database
 sudo -u postgres psql -c "DROP DATABASE sfmtl_finance;"
@@ -543,8 +491,9 @@ sudo userdel -r sfmtl
 For issues or questions:
 - Check the troubleshooting section above
 - Review application logs: `sudo journalctl -u sfmtl -f`
-- Review Nginx logs: `tail -f /var/log/nginx/sfmtl.error.log`
+- Review error logs: `tail -f /var/log/sfmtl/error.log`
 - Check deployment info: `cat /opt/sfmtl/DEPLOYMENT_INFO.txt`
+- Check your Nginx Proxy Manager logs for reverse proxy issues
 
 ## License
 

@@ -4,7 +4,8 @@
 # SFMTL Finance App - Ubuntu Deployment Script
 #############################################
 # Automated deployment script for Ubuntu servers
-# Includes PostgreSQL, Node.js, Nginx, SSL setup
+# Includes PostgreSQL, Node.js, systemd service
+# NOTE: Requires external Nginx Proxy Manager for reverse proxy and SSL
 
 set -e
 
@@ -93,30 +94,9 @@ print_info "Node.js: $(node --version), npm: $(npm --version)"
 echo ""
 
 #############################################
-# Step 4: Install Nginx
+# Step 4: Create Application User
 #############################################
-print_info "Step 4: Installing Nginx..."
-if command_exists nginx; then
-    print_warning "Nginx already installed"
-else
-    apt-get install -y nginx
-    systemctl enable nginx
-    print_success "Nginx installed"
-fi
-echo ""
-
-#############################################
-# Step 5: Install Certbot for SSL
-#############################################
-print_info "Step 5: Installing Certbot..."
-apt-get install -y certbot python3-certbot-nginx
-print_success "Certbot installed"
-echo ""
-
-#############################################
-# Step 6: Create Application User
-#############################################
-print_info "Step 6: Creating application user..."
+print_info "Step 4: Creating application user..."
 if id "$APP_USER" &>/dev/null; then
     print_warning "User $APP_USER already exists"
 else
@@ -126,9 +106,9 @@ fi
 echo ""
 
 #############################################
-# Step 7: Clone Repository
+# Step 5: Clone Repository
 #############################################
-print_info "Step 7: Cloning repository..."
+print_info "Step 5: Cloning repository..."
 if [ -d "$INSTALL_DIR" ]; then
     print_warning "Directory exists, pulling latest changes..."
     cd "$INSTALL_DIR"
@@ -143,9 +123,9 @@ cd "$INSTALL_DIR"
 echo ""
 
 #############################################
-# Step 8: Setup Database
+# Step 6: Setup Database
 #############################################
-print_info "Step 8: Setting up PostgreSQL database..."
+print_info "Step 6: Setting up PostgreSQL database..."
 DB_PASSWORD=$(generate_password)
 
 sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';" 2>/dev/null || print_warning "User may already exist"
@@ -156,9 +136,9 @@ print_success "Database configured"
 echo ""
 
 #############################################
-# Step 9: Create .env File
+# Step 7: Create .env File
 #############################################
-print_info "Step 9: Creating environment configuration..."
+print_info "Step 7: Creating environment configuration..."
 NEXTAUTH_SECRET=$(generate_password)
 DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME"
 
@@ -183,114 +163,34 @@ print_success "Environment configured"
 echo ""
 
 #############################################
-# Step 10: Install Dependencies
+# Step 8: Install Dependencies
 #############################################
-print_info "Step 10: Installing Node.js dependencies..."
+print_info "Step 8: Installing Node.js dependencies..."
 sudo -u $APP_USER npm install
 print_success "Dependencies installed"
 echo ""
 
 #############################################
-# Step 11: Run Database Migrations
+# Step 9: Run Database Migrations
 #############################################
-print_info "Step 11: Running database migrations..."
+print_info "Step 9: Running database migrations..."
 sudo -u $APP_USER npx prisma migrate deploy
 sudo -u $APP_USER npx prisma db seed
 print_success "Database initialized"
 echo ""
 
 #############################################
-# Step 12: Build Application
+# Step 10: Build Application
 #############################################
-print_info "Step 12: Building application..."
+print_info "Step 10: Building application..."
 sudo -u $APP_USER npm run build
 print_success "Application built"
 echo ""
 
 #############################################
-# Step 13: Configure Nginx
+# Step 11: Setup Systemd Service
 #############################################
-print_info "Step 13: Configuring Nginx reverse proxy..."
-cat > /etc/nginx/sites-available/sfmtl << EOF
-# HTTP - redirect to HTTPS
-server {
-    listen 80;
-    listen [::]:80;
-    server_name $DOMAIN;
-    return 301 https://\$server_name\$request_uri;
-}
-
-# HTTPS
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name $DOMAIN;
-
-    # SSL certificates (managed by Certbot)
-    # ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-
-    # SSL configuration
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_prefer_server_ciphers on;
-    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
-
-    # Logging
-    access_log /var/log/nginx/sfmtl.access.log;
-    error_log /var/log/nginx/sfmtl.error.log;
-
-    # Client settings
-    client_max_body_size 50M;
-    proxy_connect_timeout 60s;
-    proxy_send_timeout 60s;
-    proxy_read_timeout 60s;
-
-    # Proxy to Next.js application
-    location / {
-        proxy_pass http://localhost:$APP_PORT;
-        proxy_http_version 1.1;
-
-        # WebSocket support
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-
-        # Standard headers
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-
-        proxy_cache_bypass \$http_upgrade;
-    }
-
-    # Cache static assets
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
-        proxy_pass http://localhost:$APP_PORT;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
-}
-EOF
-
-ln -sf /etc/nginx/sites-available/sfmtl /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
-print_success "Nginx configured"
-echo ""
-
-#############################################
-# Step 14: Setup Systemd Service
-#############################################
-print_info "Step 14: Creating systemd service..."
+print_info "Step 11: Creating systemd service..."
 cat > /etc/systemd/system/sfmtl.service << EOF
 [Unit]
 Description=SFMTL Finance Application
@@ -323,30 +223,16 @@ print_success "Service created and started"
 echo ""
 
 #############################################
-# Step 15: Configure Firewall
+# Step 12: Configure Firewall
 #############################################
-print_info "Step 15: Configuring firewall..."
+print_info "Step 12: Configuring firewall..."
 if command_exists ufw; then
     ufw --force enable
-    ufw allow 'Nginx Full'
+    ufw allow $APP_PORT/tcp
     ufw allow 'OpenSSH'
-    print_success "Firewall configured"
+    print_success "Firewall configured (port $APP_PORT open)"
 else
     print_warning "UFW not installed, skipping firewall configuration"
-fi
-echo ""
-
-#############################################
-# Step 16: SSL Certificate
-#############################################
-print_info "Step 16: SSL Certificate Setup"
-echo "To complete SSL setup, run:"
-echo "  sudo certbot --nginx -d $DOMAIN"
-echo ""
-read -p "Do you want to set up SSL now? (y/n): " SETUP_SSL
-
-if [[ "$SETUP_SSL" =~ ^[Yy]$ ]]; then
-    certbot --nginx -d $DOMAIN --non-interactive --agree-tos --register-unsafely-without-email || print_warning "SSL setup failed. Run manually: sudo certbot --nginx -d $DOMAIN"
 fi
 echo ""
 
@@ -358,8 +244,8 @@ SFMTL Finance App - Deployment Information
 Generated: $(date)
 
 Installation Directory: $INSTALL_DIR
-Domain: https://$DOMAIN
-Application Port: $APP_PORT
+Application Port: $APP_PORT (Configure your external Nginx Proxy Manager to point to this port)
+Domain: $DOMAIN
 
 Database Configuration:
 - Database: $DB_NAME
@@ -373,6 +259,13 @@ Default Login Credentials:
 - Admin: admin@samoafinance.local / Admin@123
 - Staff: staff@samoafinance.local / Staff@123
 
+⚠️  REVERSE PROXY CONFIGURATION REQUIRED:
+Configure your external Nginx Proxy Manager to:
+- Point to: http://localhost:$APP_PORT
+- Set up SSL certificate for: $DOMAIN
+- Forward headers: Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto
+- Max body size: 50M (for file uploads)
+
 Service Management:
 - Start:   sudo systemctl start sfmtl
 - Stop:    sudo systemctl stop sfmtl
@@ -383,7 +276,6 @@ Service Management:
 Application Logs:
 - App:   /var/log/sfmtl/app.log
 - Error: /var/log/sfmtl/error.log
-- Nginx: /var/log/nginx/sfmtl.access.log
 
 Update Application:
   cd $INSTALL_DIR
@@ -411,16 +303,22 @@ echo "============================================"
 echo ""
 print_success "SFMTL Finance App successfully deployed!"
 echo ""
-echo "Domain: https://$DOMAIN"
+echo "Application running on: http://localhost:$APP_PORT"
 echo "Status: sudo systemctl status sfmtl"
 echo "Logs: sudo journalctl -u sfmtl -f"
 echo ""
 echo "Default credentials saved to: $INSTALL_DIR/DEPLOYMENT_INFO.txt"
 echo ""
-echo "Next steps:"
-echo "1. Ensure DNS points $DOMAIN to this server"
-echo "2. Complete SSL setup if not done: sudo certbot --nginx -d $DOMAIN"
-echo "3. Change default user passwords after first login"
+print_warning "⚠️  IMPORTANT - Configure External Nginx Proxy Manager:"
+echo "1. Point your Nginx Proxy Manager to: http://localhost:$APP_PORT"
+echo "2. Configure domain: $DOMAIN"
+echo "3. Set up SSL certificate in your Nginx Proxy Manager"
+echo "4. Forward required headers (Host, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto)"
+echo "5. Set client_max_body_size to 50M for file uploads"
+echo ""
+echo "After configuring proxy:"
+echo "1. Change default user passwords after first login"
+echo "2. Verify application is accessible at: https://$DOMAIN"
 echo ""
 print_success "Deployment complete!"
 echo "============================================"
