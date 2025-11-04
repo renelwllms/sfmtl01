@@ -9,6 +9,9 @@
 
 set -e
 
+# Prevent interactive prompts during installation
+export DEBIAN_FRONTEND=noninteractive
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -39,8 +42,8 @@ echo "  SFMTL Finance App - Ubuntu Deployment    "
 echo "============================================"
 echo ""
 print_info "This script will install and configure the complete application stack."
-echo ""
-read -p "Press Enter to continue or Ctrl+C to cancel..."
+print_warning "Starting automated deployment in 3 seconds... (Press Ctrl+C to cancel)"
+sleep 3
 echo ""
 
 # Check if running as root
@@ -53,8 +56,8 @@ fi
 # Step 1: Update System
 #############################################
 print_info "Step 1: Updating system packages..."
-apt-get update
-apt-get upgrade -y
+apt-get update -qq
+apt-get upgrade -y -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 print_success "System updated"
 echo ""
 
@@ -65,7 +68,7 @@ print_info "Step 2: Installing PostgreSQL 16..."
 if command_exists psql; then
     print_warning "PostgreSQL already installed: $(psql --version)"
 else
-    apt-get install -y postgresql postgresql-contrib
+    apt-get install -y -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" postgresql postgresql-contrib
     systemctl start postgresql
     systemctl enable postgresql
     print_success "PostgreSQL installed"
@@ -81,13 +84,13 @@ if command_exists node; then
     if [ "$NODE_VERSION" -lt 20 ]; then
         print_warning "Upgrading Node.js to version 20..."
         curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-        apt-get install -y nodejs
+        apt-get install -y -qq nodejs
     else
         print_warning "Node.js already installed: $(node --version)"
     fi
 else
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs
+    apt-get install -y -qq nodejs
     print_success "Node.js installed"
 fi
 print_info "Node.js: $(node --version), npm: $(npm --version)"
