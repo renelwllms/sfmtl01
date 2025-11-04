@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatNZDate, formatNZDateTime } from '@/lib/date-utils';
+import AgentSalesChart from '@/components/AgentSalesChart';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -334,6 +335,13 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Agent Sales Performance */}
+        {!loadingDashboard && isAdmin && (
+          <div className="mb-8">
+            <AgentSalesChart />
           </div>
         )}
 

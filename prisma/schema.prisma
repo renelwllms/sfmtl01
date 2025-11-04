@@ -71,10 +71,14 @@ model Customer {
   phone        String           @unique // E.164
   email        String?
   address      String?
+  agent        Agent?           @relation("CustomerAgent", fields: [agentId], references: [id])
+  agentId      String?          // Which agent registered this customer
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   ids          CustomerIdFile[]
   transactions Transaction[]
+
+  @@index([agentId])
 }
 
 model CustomerIdFile {
@@ -147,6 +151,9 @@ model Transaction {
   isPtrRequired          Boolean         @default(false) // PTR required for >= NZD 1,000
   isGoAmlExportReady     Boolean         @default(false) // Ready for goAML export
   goAmlExportedAt        DateTime?       // When exported to goAML
+  // Agent tracking
+  agent                  Agent?          @relation("TransactionAgent", fields: [agentId], references: [id])
+  agentId                String?         // Which agent processed this transaction
   createdBy              User?           @relation("TransactionCreatedBy", fields: [createdById], references: [id])
   createdById            String?
   createdAt              DateTime        @default(now())
@@ -155,6 +162,7 @@ model Transaction {
   @@index([date, currency])
   @@index([isPtrRequired])
   @@index([isGoAmlExportReady])
+  @@index([agentId, date])
 }
 
 model ExchangeRate {
@@ -183,6 +191,12 @@ model DocumentType {
   updatedAt DateTime @updatedAt
 }
 
+enum AgentStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
 enum ActivityType {
   USER_LOGIN
   USER_LOGOUT
@@ -197,6 +211,8 @@ enum ActivityType {
   SETTINGS_CHANGED
   REPORT_GENERATED
   SEARCH_PERFORMED
+  AGENT_CREATED
+  AGENT_UPDATED
 }
 
 model ActivityLog {
@@ -228,4 +244,26 @@ model EmailSettings {
   senderName   String?  // Display name for sender
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Agent {
+  id            String        @id @default(cuid())
+  agentCode     String        @unique // e.g. AGT-001, AGT-002
+  name          String
+  location      String?       // Village/Town/City
+  phone         String?
+  email         String?
+  address       String?
+  qrCodeUrl     String?       // URL for the QR code image (if generated and stored)
+  status        AgentStatus   @default(ACTIVE)
+  isHeadOffice  Boolean       @default(false) // True for the main head office agent
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  createdById   String?
+  transactions  Transaction[] @relation("TransactionAgent")
+  customers     Customer[]    @relation("CustomerAgent")
+
+  @@index([agentCode])
+  @@index([status])
 }

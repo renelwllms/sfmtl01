@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Navigation from '@/components/Navigation';
 import { useUI } from '@/contexts/UIContext';
+import { QRCodeSVG } from 'qrcode.react';
+import AgentsTab from '@/components/AgentsTab';
 
 interface ActivityLog {
   id: string;
@@ -38,7 +40,7 @@ interface DocumentType {
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const { settings: uiSettings, updateSettings } = useUI();
-  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email'>('rates');
+  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email' | 'agents'>('rates');
 
   // Exchange Rates State
   const [rateDate, setRateDate] = useState('');
@@ -97,6 +99,22 @@ export default function SettingsPage() {
   const [emailError, setEmailError] = useState('');
   const [testingEmail, setTestingEmail] = useState(false);
 
+  // Agents State
+  const [agents, setAgents] = useState<any[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(false);
+  const [newAgent, setNewAgent] = useState({
+    name: '',
+    location: '',
+    phone: '',
+    email: '',
+    address: '',
+    notes: '',
+    isHeadOffice: false
+  });
+  const [agentMessage, setAgentMessage] = useState('');
+  const [agentError, setAgentError] = useState('');
+  const [creatingAgent, setCreatingAgent] = useState(false);
+
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     setRateDate(today);
@@ -114,6 +132,8 @@ export default function SettingsPage() {
       fetchDocumentTypes();
     } else if (activeTab === 'email') {
       fetchEmailSettings();
+    } else if (activeTab === 'agents') {
+      fetchAgents();
     }
   }, [activeTab]);
 
@@ -402,6 +422,84 @@ export default function SettingsPage() {
     }
   }
 
+  async function fetchAgents() {
+    setLoadingAgents(true);
+    try {
+      const response = await fetch('/api/agents?includeStats=true');
+      if (response.ok) {
+        const data = await response.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+    } finally {
+      setLoadingAgents(false);
+    }
+  }
+
+  async function handleCreateAgent(e: React.FormEvent) {
+    e.preventDefault();
+    setAgentError('');
+    setAgentMessage('');
+    setCreatingAgent(true);
+
+    try {
+      if (!newAgent.name.trim()) {
+        setAgentError('Agent name is required');
+        setCreatingAgent(false);
+        return;
+      }
+
+      const response = await fetch('/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAgent)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAgentError(data.error || 'Failed to create agent');
+        return;
+      }
+
+      setAgentMessage(`Agent ${data.name} (${data.agentCode}) created successfully!`);
+      setNewAgent({
+        name: '',
+        location: '',
+        phone: '',
+        email: '',
+        address: '',
+        notes: '',
+        isHeadOffice: false
+      });
+      fetchAgents();
+      setTimeout(() => setAgentMessage(''), 5000);
+    } catch (err) {
+      setAgentError('Failed to create agent');
+    } finally {
+      setCreatingAgent(false);
+    }
+  }
+
+  async function handleUpdateAgentStatus(agentId: string, status: string) {
+    try {
+      const response = await fetch(`/api/agents/${agentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        setAgentMessage('Agent status updated successfully!');
+        fetchAgents();
+        setTimeout(() => setAgentMessage(''), 3000);
+      }
+    } catch (error) {
+      setAgentError('Failed to update agent status');
+    }
+  }
+
   // Show loading state while session is being fetched
   if (status === 'loading') {
     return (
@@ -496,6 +594,16 @@ export default function SettingsPage() {
                 }`}
               >
                 Email (Office 365)
+              </button>
+              <button
+                onClick={() => setActiveTab('agents')}
+                className={`px-6 py-4 text-sm font-medium ${
+                  activeTab === 'agents'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Agents & QR Codes
               </button>
             </div>
           </div>
@@ -1271,6 +1379,21 @@ export default function SettingsPage() {
                   </form>
                 )}
               </div>
+            )}
+
+            {/* Agents & QR Codes Tab */}
+            {activeTab === 'agents' && (
+              <AgentsTab
+                agents={agents}
+                loadingAgents={loadingAgents}
+                newAgent={newAgent}
+                setNewAgent={setNewAgent}
+                agentMessage={agentMessage}
+                agentError={agentError}
+                creatingAgent={creatingAgent}
+                handleCreateAgent={handleCreateAgent}
+                handleUpdateAgentStatus={handleUpdateAgentStatus}
+              />
             )}
           </div>
         </div>
