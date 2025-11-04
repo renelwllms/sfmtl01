@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity-logger";
 import { writeFile } from "fs/promises";
 import { join } from "path";
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify agent exists and is active
-    const agent = await prisma.agent.findUnique({
+    const agent = await db.agent.findUnique({
       where: { agentCode },
     });
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate customer ID
-    const counter = await prisma.counter.upsert({
+    const counter = await db.counter.upsert({
       where: { name: "customer" },
       update: { value: { increment: 1 } },
       create: { name: "customer", value: 1 },
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const customerId = `CUST-${year}-${String(counter.value).padStart(6, "0")}`;
 
     // Create customer
-    const customer = await prisma.customer.create({
+    const customer = await db.customer.create({
       data: {
         customerId,
         firstName,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         await writeFile(filepath, buffer);
 
         // Create CustomerIdFile record
-        await prisma.customerIdFile.create({
+        await db.customerIdFile.create({
           data: {
             customerId: customer.id,
             filePath: `/uploads/customer-ids/${filename}`,

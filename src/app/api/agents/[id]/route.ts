@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity-logger";
 
 // GET /api/agents/[id] - Get single agent
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const agent = await prisma.agent.findUnique({
+    const agent = await db.agent.findUnique({
       where: { id: params.id },
       include: {
         _count: {
@@ -53,7 +53,7 @@ export async function PATCH(
     }
 
     // Check if user is admin
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { email: session.user.email! },
     });
 
@@ -64,7 +64,7 @@ export async function PATCH(
     const body = await req.json();
     const { name, location, phone, email, address, notes, status } = body;
 
-    const agent = await prisma.agent.update({
+    const agent = await db.agent.update({
       where: { id: params.id },
       data: {
         ...(name && { name }),
@@ -108,7 +108,7 @@ export async function DELETE(
     }
 
     // Check if user is admin
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { email: session.user.email! },
     });
 
@@ -117,7 +117,7 @@ export async function DELETE(
     }
 
     // Soft delete by setting status to INACTIVE
-    const agent = await prisma.agent.update({
+    const agent = await db.agent.update({
       where: { id: params.id },
       data: { status: "INACTIVE" },
     });

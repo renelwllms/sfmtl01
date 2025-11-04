@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity-logger";
 
 // GET /api/agents - List all agents
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const where = status ? { status } : {};
 
-    const agents = await prisma.agent.findMany({
+    const agents = await db.agent.findMany({
       where,
       include: includeStats
         ? {
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate next agent code
-    const counter = await prisma.counter.upsert({
+    const counter = await db.counter.upsert({
       where: { name: "agent" },
       update: { value: { increment: 1 } },
       create: { name: "agent", value: 1 },
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     const agentCode = `AGT-${String(counter.value).padStart(3, "0")}`;
 
-    const agent = await prisma.agent.create({
+    const agent = await db.agent.create({
       data: {
         agentCode,
         name,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
-import prisma from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { DateTime } from "luxon";
 
 // GET /api/agents/stats - Get agent sales statistics
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get transactions grouped by agent
-    const transactions = await prisma.transaction.findMany({
+    const transactions = await db.transaction.findMany({
       where,
       select: {
         agentId: true,
