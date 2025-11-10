@@ -662,13 +662,13 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50">
       <Navigation />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow">
           <div className="border-b border-gray-200">
-            <div className="flex">
+            <div className="flex flex-wrap justify-center">
               <button
                 onClick={() => setActiveTab('rates')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'rates'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
@@ -678,7 +678,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('users')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'users'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
@@ -688,7 +688,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('ui')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'ui'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
@@ -698,7 +698,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('logs')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'logs'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
@@ -708,7 +708,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('doctypes')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'doctypes'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
@@ -718,7 +718,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('email')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'email'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
@@ -728,7 +728,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('agents')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'agents'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
@@ -738,7 +738,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab('database')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
                   activeTab === 'database'
                     ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
