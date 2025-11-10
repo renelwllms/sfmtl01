@@ -40,7 +40,7 @@ interface DocumentType {
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const { settings: uiSettings, updateSettings } = useUI();
-  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email' | 'agents'>('rates');
+  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email' | 'agents' | 'database'>('rates');
 
   // Exchange Rates State
   const [rateDate, setRateDate] = useState('');
@@ -115,6 +115,23 @@ export default function SettingsPage() {
   const [agentError, setAgentError] = useState('');
   const [creatingAgent, setCreatingAgent] = useState(false);
 
+  // Database Settings State
+  const [dbSettings, setDbSettings] = useState({
+    host: 'localhost',
+    port: '5432',
+    database: 'samoa_finance',
+    user: 'postgres',
+    password: '',
+    dbType: 'postgresql' as 'postgresql' | 'sqlserver'
+  });
+  const [loadingDbSettings, setLoadingDbSettings] = useState(false);
+  const [savingDbSettings, setSavingDbSettings] = useState(false);
+  const [testingDbConnection, setTestingDbConnection] = useState(false);
+  const [migratingDb, setMigratingDb] = useState(false);
+  const [dbMessage, setDbMessage] = useState('');
+  const [dbError, setDbError] = useState('');
+  const [dbTestResult, setDbTestResult] = useState<any>(null);
+
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     setRateDate(today);
@@ -134,6 +151,8 @@ export default function SettingsPage() {
       fetchEmailSettings();
     } else if (activeTab === 'agents') {
       fetchAgents();
+    } else if (activeTab === 'database') {
+      fetchDatabaseSettings();
     }
   }, [activeTab]);
 
@@ -500,6 +519,118 @@ export default function SettingsPage() {
     }
   }
 
+  async function fetchDatabaseSettings() {
+    setLoadingDbSettings(true);
+    try {
+      const response = await fetch('/api/settings/database');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.settings) {
+          setDbSettings({
+            host: data.settings.host || 'localhost',
+            port: data.settings.port || '5432',
+            database: data.settings.database || 'samoa_finance',
+            user: data.settings.user || 'postgres',
+            password: data.settings.password || '',
+            dbType: data.settings.dbType || 'postgresql'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch database settings:', error);
+    } finally {
+      setLoadingDbSettings(false);
+    }
+  }
+
+  async function handleSaveDatabaseSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setDbError('');
+    setDbMessage('');
+    setSavingDbSettings(true);
+
+    try {
+      const response = await fetch('/api/settings/database', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbSettings)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDbError(data.error || 'Failed to save database settings');
+        return;
+      }
+
+      setDbMessage(data.message || 'Database settings saved successfully!');
+      setTimeout(() => setDbMessage(''), 5000);
+    } catch (err) {
+      setDbError('An error occurred while saving database settings');
+    } finally {
+      setSavingDbSettings(false);
+    }
+  }
+
+  async function handleTestDatabaseConnection() {
+    setDbError('');
+    setDbMessage('');
+    setDbTestResult(null);
+    setTestingDbConnection(true);
+
+    try {
+      const response = await fetch('/api/settings/database/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbSettings)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDbError(data.error || 'Connection test failed');
+        setDbTestResult(data.details || null);
+        return;
+      }
+
+      setDbMessage('Connection test successful!');
+      setDbTestResult(data.details || null);
+      setTimeout(() => setDbMessage(''), 5000);
+    } catch (err) {
+      setDbError('An error occurred while testing database connection');
+    } finally {
+      setTestingDbConnection(false);
+    }
+  }
+
+  async function handleDatabaseMigration(action: 'push' | 'seed') {
+    setDbError('');
+    setDbMessage('');
+    setMigratingDb(true);
+
+    try {
+      const response = await fetch('/api/settings/database/migrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setDbError(data.error || 'Migration failed');
+        return;
+      }
+
+      setDbMessage(data.message || 'Migration completed successfully!');
+      setTimeout(() => setDbMessage(''), 5000);
+    } catch (err) {
+      setDbError('An error occurred while running migration');
+    } finally {
+      setMigratingDb(false);
+    }
+  }
+
   // Show loading state while session is being fetched
   if (status === 'loading') {
     return (
@@ -604,6 +735,16 @@ export default function SettingsPage() {
                 }`}
               >
                 Agents & QR Codes
+              </button>
+              <button
+                onClick={() => setActiveTab('database')}
+                className={`px-6 py-4 text-sm font-medium ${
+                  activeTab === 'database'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Database
               </button>
             </div>
           </div>
@@ -1394,6 +1535,276 @@ export default function SettingsPage() {
                 handleCreateAgent={handleCreateAgent}
                 handleUpdateAgentStatus={handleUpdateAgentStatus}
               />
+            )}
+
+            {/* Database Settings Tab */}
+            {activeTab === 'database' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Database Configuration</h2>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Configure your PostgreSQL database connection settings. Test the connection and set up the database schema.
+                  </p>
+                </div>
+
+                {loadingDbSettings ? (
+                  <div className="text-center py-12 text-gray-600">Loading database settings...</div>
+                ) : (
+                  <form onSubmit={handleSaveDatabaseSettings} className="space-y-6">
+                    {/* Database Type Selector */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Database Type
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDbSettings({
+                              ...dbSettings,
+                              dbType: 'postgresql',
+                              port: '5432',
+                              user: 'postgres'
+                            });
+                          }}
+                          className={`p-4 border-2 rounded-lg transition-all ${
+                            dbSettings.dbType === 'postgresql'
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-blue-300'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="text-2xl mb-2">🐘</div>
+                            <div className="font-medium">PostgreSQL</div>
+                            <div className="text-xs text-gray-500">Default port: 5432</div>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDbSettings({
+                              ...dbSettings,
+                              dbType: 'sqlserver',
+                              port: '1433',
+                              user: 'sa'
+                            });
+                          }}
+                          className={`p-4 border-2 rounded-lg transition-all ${
+                            dbSettings.dbType === 'sqlserver'
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-blue-300'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="text-2xl mb-2">⚡</div>
+                            <div className="font-medium">SQL Server</div>
+                            <div className="text-xs text-gray-500">Default port: 1433</div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Connection Details */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Host
+                          </label>
+                          <input
+                            type="text"
+                            value={dbSettings.host}
+                            onChange={(e) => setDbSettings({ ...dbSettings, host: e.target.value })}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="localhost"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">Database server hostname or IP address</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Port
+                          </label>
+                          <input
+                            type="text"
+                            value={dbSettings.port}
+                            onChange={(e) => setDbSettings({ ...dbSettings, port: e.target.value })}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder={dbSettings.dbType === 'postgresql' ? '5432' : '1433'}
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            {dbSettings.dbType === 'postgresql'
+                              ? 'Default PostgreSQL port: 5432'
+                              : 'Default SQL Server port: 1433'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Database Name
+                        </label>
+                        <input
+                          type="text"
+                          value={dbSettings.database}
+                          onChange={(e) => setDbSettings({ ...dbSettings, database: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="samoa_finance"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Name of the database to connect to</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Username
+                        </label>
+                        <input
+                          type="text"
+                          value={dbSettings.user}
+                          onChange={(e) => setDbSettings({ ...dbSettings, user: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder={dbSettings.dbType === 'postgresql' ? 'postgres' : 'sa'}
+                        />
+                        <p className="mt-1 text-xs text-gray-500">
+                          {dbSettings.dbType === 'postgresql'
+                            ? 'Database user with appropriate permissions'
+                            : 'SQL Server user (e.g., sa for admin)'}
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Password
+                        </label>
+                        <input
+                          type="password"
+                          value={dbSettings.password}
+                          onChange={(e) => setDbSettings({ ...dbSettings, password: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter database password"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Database user password</p>
+                      </div>
+                    </div>
+
+                    {/* Test Result */}
+                    {dbTestResult && (
+                      <div className={`rounded-md p-4 ${dbTestResult.connected ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                        <h4 className="text-sm font-semibold mb-2 ${dbTestResult.connected ? 'text-green-900' : 'text-red-900'}">
+                          Connection Test Result
+                        </h4>
+                        {dbTestResult.connected && (
+                          <div className="text-xs text-green-800 space-y-1">
+                            <p>✓ Connection established successfully</p>
+                            <p>✓ Tables found: {dbTestResult.tablesCount}</p>
+                            {dbTestResult.schemaExists ? (
+                              <p>✓ Schema exists and is ready</p>
+                            ) : (
+                              <p className="text-yellow-800">⚠ No tables found. You may need to run "Setup Schema"</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Messages */}
+                    {dbMessage && (
+                      <div className="rounded-md bg-green-50 p-4 border border-green-200">
+                        <p className="text-sm text-green-800">{dbMessage}</p>
+                      </div>
+                    )}
+
+                    {dbError && (
+                      <div className="rounded-md bg-red-50 p-4 border border-red-200">
+                        <p className="text-sm text-red-800">{dbError}</p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-3 pt-4 border-t">
+                      <button
+                        type="submit"
+                        disabled={savingDbSettings}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                      >
+                        {savingDbSettings ? 'Saving...' : 'Save Connection Settings'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleTestDatabaseConnection}
+                        disabled={testingDbConnection}
+                        className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+                      >
+                        {testingDbConnection ? 'Testing...' : 'Test Connection'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDatabaseMigration('push')}
+                        disabled={migratingDb}
+                        className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                      >
+                        {migratingDb ? 'Running...' : 'Setup Schema'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDatabaseMigration('seed')}
+                        disabled={migratingDb}
+                        className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
+                      >
+                        {migratingDb ? 'Seeding...' : 'Seed Database'}
+                      </button>
+                    </div>
+
+                    {/* Help Section */}
+                    <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">📋 Quick Guide</h4>
+                      <ul className="text-xs text-gray-700 space-y-1 list-disc list-inside">
+                        <li><strong>Database Type:</strong> Choose between PostgreSQL (recommended) or SQL Server Express</li>
+                        <li><strong>Save Connection Settings:</strong> Updates the .env file with your database credentials</li>
+                        <li><strong>Test Connection:</strong> Verifies that the application can connect to the database</li>
+                        <li><strong>Setup Schema:</strong> Creates all necessary tables and relationships in the database</li>
+                        <li><strong>Seed Database:</strong> Populates the database with initial data (admin user, counters, etc.)</li>
+                      </ul>
+                    </div>
+
+                    {/* Important Note for SQL Server */}
+                    {dbSettings.dbType === 'sqlserver' && (
+                      <div className="rounded-md bg-orange-50 p-4 border border-orange-200">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-2">⚠️ Important: SQL Server Setup</h4>
+                        <div className="text-xs text-gray-700 space-y-2">
+                          <p>When switching to SQL Server, you must manually update the Prisma schema provider:</p>
+                          <ol className="list-decimal list-inside space-y-1 ml-2">
+                            <li>Open <code className="bg-orange-100 px-1 rounded">prisma/schema.prisma</code></li>
+                            <li>Change <code className="bg-orange-100 px-1 rounded">provider = "postgresql"</code> to <code className="bg-orange-100 px-1 rounded">provider = "sqlserver"</code></li>
+                            <li>Run <code className="bg-orange-100 px-1 rounded">npx prisma generate</code> to regenerate the Prisma Client</li>
+                            <li>Restart the application</li>
+                          </ol>
+                          <p className="mt-2">Note: SQL Server Express is free but has limitations (10 GB database size, 1 GB RAM).</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Security Note */}
+                    <div className="rounded-md bg-yellow-50 p-4 border border-yellow-200">
+                      <p className="text-sm text-yellow-800">
+                        🔒 Security: Database credentials are stored in the .env file. Ensure this file is included in .gitignore and never committed to version control. The application must be restarted after saving new connection settings.
+                      </p>
+                    </div>
+
+                    {/* Connection String Preview */}
+                    <div className="rounded-md bg-gray-50 p-4 border border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Connection String Preview</h4>
+                      <code className="text-xs text-gray-700 break-all">
+                        {dbSettings.dbType === 'postgresql'
+                          ? `postgresql://${dbSettings.user}:***@${dbSettings.host}:${dbSettings.port}/${dbSettings.database}`
+                          : `sqlserver://${dbSettings.host}:${dbSettings.port};database=${dbSettings.database};user=${dbSettings.user};password=***;encrypt=true;trustServerCertificate=true`
+                        }
+                      </code>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
           </div>
         </div>

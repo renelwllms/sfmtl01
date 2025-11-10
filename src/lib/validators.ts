@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 
 export const e164 = z
   .string()
-  .regex(/^\+?[1-9]\d{7,14}$/, 'Invalid phone (E.164)');
+  .regex(/^\+?[1-9]\d{7,14}$/, 'Phone number must be in E.164 format (e.g., +6421234567). Start with + followed by country code and number.');
 
 export const dob18 = z.coerce.date().refine(
   (d) => {
@@ -11,7 +11,7 @@ export const dob18 = z.coerce.date().refine(
     const eighteen = now.minus({ years: 18 });
     return DateTime.fromJSDate(d) <= eighteen;
   },
-  'Customer must be 18 or older'
+  'Customer must be at least 18 years old. Please check the date of birth.'
 );
 
 export const CustomerSchema = z.object({

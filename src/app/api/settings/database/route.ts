@@ -1,0 +1,197 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions, hasRole } from '@/lib/auth';
+import fs from 'fs';
+import path from 'path';
+
+// GET /api/settings/database - Get current database connection info
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has ADMIN role
+    const userRoles = (session.user as any)?.roles || '';
+    if (!hasRole(userRoles, 'ADMIN')) {
+      return NextResponse.json({ error: 'Forbidden - Admin role required' }, { status: 403 });
+    }
+
+    // Read current .env file
+    const envPath = path.join(process.cwd(), '.env');
+    let dbUrl = process.env.DATABASE_URL || '';
+    let directUrl = process.env.DIRECT_URL || '';
+
+    // Parse DATABASE_URL to get individual components and detect database type
+    const settings = parseDatabaseUrl(dbUrl);
+
+    return NextResponse.json({
+      settings: {
+        ...settings,
+        databaseUrl: dbUrl,
+        directUrl: directUrl,
+        dbType: detectDatabaseType(dbUrl)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching database settings:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// POST /api/settings/database - Update database connection
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has ADMIN role
+    const userRoles = (session.user as any)?.roles || '';
+    if (!hasRole(userRoles, 'ADMIN')) {
+      return NextResponse.json({ error: 'Forbidden - Admin role required' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { host, port, database, user, password, dbType } = body;
+
+    // Validate required fields
+    if (!host || !port || !database || !user || !password || !dbType) {
+      return NextResponse.json(
+        { error: 'All database connection fields are required' },
+        { status: 400 }
+      );
+    }
+
+    // Build connection URLs based on database type
+    let databaseUrl = '';
+    let directUrl = '';
+
+    if (dbType === 'postgresql') {
+      databaseUrl = `postgresql://${user}:${password}@${host}:${port}/${database}`;
+      directUrl = `postgresql://${user}:${password}@${host}:${port}/${database}`;
+    } else if (dbType === 'sqlserver') {
+      // SQL Server connection string format
+      // sqlserver://[host]:[port];database=[database];user=[user];password=[password];encrypt=true;trustServerCertificate=true
+      databaseUrl = `sqlserver://${host}:${port};database=${database};user=${user};password=${password};encrypt=true;trustServerCertificate=true`;
+      directUrl = databaseUrl;
+    } else {
+      return NextResponse.json(
+        { error: 'Invalid database type. Use "postgresql" or "sqlserver"' },
+        { status: 400 }
+      );
+    }
+
+    // Read current .env file
+    const envPath = path.join(process.cwd(), '.env');
+    let envContent = '';
+
+    try {
+      envContent = fs.readFileSync(envPath, 'utf-8');
+    } catch (error) {
+      // .env doesn't exist, create new content
+      envContent = '';
+    }
+
+    // Update DATABASE_URL and DIRECT_URL
+    const updatedEnv = updateEnvVariable(envContent, 'DATABASE_URL', databaseUrl);
+    const finalEnv = updateEnvVariable(updatedEnv, 'DIRECT_URL', directUrl);
+
+    // Write back to .env file
+    fs.writeFileSync(envPath, finalEnv, 'utf-8');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Database settings updated successfully. Please restart the application for changes to take effect.',
+      settings: {
+        host,
+        port,
+        database,
+        user,
+        password: '***hidden***',
+        dbType
+      }
+    });
+  } catch (error) {
+    console.error('Error updating database settings:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// Helper function to detect database type from URL
+function detectDatabaseType(url: string): 'postgresql' | 'sqlserver' {
+  if (url.startsWith('sqlserver://')) {
+    return 'sqlserver';
+  }
+  return 'postgresql'; // default
+}
+
+// Helper function to parse database URL
+function parseDatabaseUrl(url: string) {
+  try {
+    if (url.startsWith('postgresql://')) {
+      // postgresql://user:password@host:port/database
+      const match = url.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+?)(\?|$)/);
+
+      if (match) {
+        return {
+          user: match[1],
+          password: match[2],
+          host: match[3],
+          port: match[4],
+          database: match[5].split('?')[0] // Remove query params
+        };
+      }
+    } else if (url.startsWith('sqlserver://')) {
+      // sqlserver://host:port;database=dbname;user=username;password=pass;...
+      const hostMatch = url.match(/sqlserver:\/\/([^:;]+):(\d+)/);
+      const dbMatch = url.match(/database=([^;]+)/);
+      const userMatch = url.match(/user=([^;]+)/);
+      const passwordMatch = url.match(/password=([^;]+)/);
+
+      if (hostMatch && dbMatch && userMatch && passwordMatch) {
+        return {
+          user: userMatch[1],
+          password: passwordMatch[1],
+          host: hostMatch[1],
+          port: hostMatch[2],
+          database: dbMatch[1]
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing database URL:', error);
+  }
+
+  return {
+    user: '',
+    password: '',
+    host: 'localhost',
+    port: '5432',
+    database: 'samoa_finance'
+  };
+}
+
+// Helper function to update .env variable
+function updateEnvVariable(content: string, key: string, value: string): string {
+  const lines = content.split('\n');
+  const keyPattern = new RegExp(`^${key}=`);
+  let found = false;
+
+  const updatedLines = lines.map(line => {
+    if (keyPattern.test(line)) {
+      found = true;
+      return `${key}="${value}"`;
+    }
+    return line;
+  });
+
+  // If not found, add it
+  if (!found) {
+    updatedLines.push(`${key}="${value}"`);
+  }
+
+  return updatedLines.join('\n');
+}

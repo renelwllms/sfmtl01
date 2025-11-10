@@ -112,8 +112,19 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validation = CustomerSchema.safeParse(body);
     if (!validation.success) {
+      // Format validation errors into user-friendly messages
+      const errors = validation.error?.errors || [];
+      const errorMessages = errors.map(err => {
+        const field = err.path.join('.');
+        return `${field}: ${err.message}`;
+      });
+
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.error.errors },
+        {
+          error: 'Validation failed',
+          message: errorMessages.length > 0 ? errorMessages.join('; ') : 'Invalid input data',
+          details: errors
+        },
         { status: 400 }
       );
     }
