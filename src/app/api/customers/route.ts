@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { CustomerSchema } from '@/lib/validators';
 import { nextCustomerId } from '@/lib/ids';
-import { logCustomerActivity, getRequestInfo } from '@/lib/activity-logger';
+import { logCustomerActivity, getRequestInfo } from '@/lib/activity-log';
 
 // GET /api/customers - Search by phone/customerId OR list all customers
 export async function GET(request: NextRequest) {

@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import bcrypt from 'bcrypt';
 import { db } from '@/lib/db';
-import { logActivity } from '@/lib/activity-logger';
+import { logActivity } from '@/lib/activity-log';
 
 // Re-export role helper functions from roles.ts
 export { hasRole, getRolesArray } from '@/lib/roles';
@@ -20,7 +20,8 @@ export const authOptions: NextAuthOptions = {
             params: {
               scope: 'openid profile email User.Read'
             }
-          }
+          },
+          checks: ['pkce', 'state']
         })]
       : []
     ),

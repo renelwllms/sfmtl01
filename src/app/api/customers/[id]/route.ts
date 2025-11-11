@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions, hasRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { logActivity } from '@/lib/activity-logger';
+import { logActivity } from '@/lib/activity-log';
 
 // GET /api/customers/[id] - Get customer by ID
 export async function GET(
