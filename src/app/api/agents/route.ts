@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user is admin
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { email: session.user.email! },
     });
 
