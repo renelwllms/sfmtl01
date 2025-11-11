@@ -3,6 +3,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions, hasRole } from '@/lib/auth';
 import fs from 'fs';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 // GET /api/settings/database - Get current database connection info
 export async function GET(request: NextRequest) {
@@ -102,9 +106,51 @@ export async function POST(request: NextRequest) {
     // Write back to .env file
     fs.writeFileSync(envPath, finalEnv, 'utf-8');
 
+    // Update Prisma schema provider
+    const schemaPath = path.join(process.cwd(), 'prisma', 'schema.prisma');
+    try {
+      let schemaContent = fs.readFileSync(schemaPath, 'utf-8');
+
+      // Update the provider based on database type
+      if (dbType === 'postgresql') {
+        // Replace sqlserver with postgresql and restore directUrl if needed
+        schemaContent = schemaContent.replace(
+          /datasource db \{[^}]+\}/s,
+          `datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // For migrations
+}`
+        );
+      } else if (dbType === 'sqlserver') {
+        // Replace postgresql with sqlserver and remove directUrl
+        schemaContent = schemaContent.replace(
+          /datasource db \{[^}]+\}/s,
+          `datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}`
+        );
+      }
+
+      fs.writeFileSync(schemaPath, schemaContent, 'utf-8');
+
+      // Regenerate Prisma Client
+      console.log('Regenerating Prisma Client...');
+      await execAsync('npx prisma generate', { cwd: process.cwd() });
+      console.log('Prisma Client regenerated successfully');
+    } catch (error) {
+      console.error('Error updating Prisma schema or regenerating client:', error);
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to update Prisma schema or regenerate client. You may need to manually run: npx prisma generate',
+        details: error instanceof Error ? error.message : String(error)
+      }, { status: 500 });
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Database settings updated successfully. Please restart the application for changes to take effect.',
+      message: 'Database settings and Prisma schema updated successfully! Prisma Client has been regenerated. Please restart the application for changes to take effect.',
       settings: {
         host,
         port,

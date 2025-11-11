@@ -1768,22 +1768,25 @@ export default function SettingsPage() {
                       </ul>
                     </div>
 
-                    {/* Important Note for SQL Server */}
-                    {dbSettings.dbType === 'sqlserver' && (
-                      <div className="rounded-md bg-orange-50 p-4 border border-orange-200">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-2">⚠️ Important: SQL Server Setup</h4>
-                        <div className="text-xs text-gray-700 space-y-2">
-                          <p>When switching to SQL Server, you must manually update the Prisma schema provider:</p>
-                          <ol className="list-decimal list-inside space-y-1 ml-2">
-                            <li>Open <code className="bg-orange-100 px-1 rounded">prisma/schema.prisma</code></li>
-                            <li>Change <code className="bg-orange-100 px-1 rounded">provider = "postgresql"</code> to <code className="bg-orange-100 px-1 rounded">provider = "sqlserver"</code></li>
-                            <li>Run <code className="bg-orange-100 px-1 rounded">npx prisma generate</code> to regenerate the Prisma Client</li>
-                            <li>Restart the application</li>
-                          </ol>
+                    {/* Automatic Setup Information */}
+                    <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">✨ Automatic Database Setup</h4>
+                      <div className="text-xs text-gray-700 space-y-2">
+                        <p>When you save these settings, the system will automatically:</p>
+                        <ol className="list-decimal list-inside space-y-1 ml-2">
+                          <li>Update the database connection string in <code className="bg-blue-100 px-1 rounded">.env</code></li>
+                          <li>Update the Prisma schema provider to <code className="bg-blue-100 px-1 rounded">{dbSettings.dbType}</code></li>
+                          <li>Regenerate the Prisma Client with the correct provider</li>
+                        </ol>
+                        <p className="mt-2">⚠️ You will need to restart the application after saving for changes to take effect.</p>
+                        {dbSettings.dbType === 'sqlserver' && (
                           <p className="mt-2">Note: SQL Server Express is free but has limitations (10 GB database size, 1 GB RAM).</p>
-                        </div>
+                        )}
+                        {dbSettings.dbType === 'postgresql' && (
+                          <p className="mt-2">Note: PostgreSQL is recommended for production use.</p>
+                        )}
                       </div>
-                    )}
+                    </div>
 
                     {/* Security Note */}
                     <div className="rounded-md bg-yellow-50 p-4 border border-yellow-200">
