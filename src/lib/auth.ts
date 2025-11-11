@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import AzureADProvider from 'next-auth/providers/azure-ad';
 import bcrypt from 'bcrypt';
 import { db } from '@/lib/db';
-import { logActivity } from '@/lib/activity-log';
+import { logActivity } from '@/lib/activity-logger';
 
 // Re-export role helper functions from roles.ts
 export { hasRole, getRolesArray } from '@/lib/roles';

@@ -6,9 +6,10 @@ import { db } from '@/lib/db';
 // DELETE /api/document-types/[id] - Delete/deactivate document type (Admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +21,7 @@ export async function DELETE(
     }
 
     const documentType = await db.documentType.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!documentType) {
@@ -30,7 +31,7 @@ export async function DELETE(
     // Don't allow deleting default types, just deactivate them
     if (documentType.isDefault) {
       await db.documentType.update({
-        where: { id: params.id },
+        where: { id },
         data: { isActive: false }
       });
       return NextResponse.json({ message: 'Document type deactivated' });
@@ -38,7 +39,7 @@ export async function DELETE(
 
     // For custom types, actually delete them
     await db.documentType.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({ message: 'Document type deleted' });
@@ -54,9 +55,10 @@ export async function DELETE(
 // PATCH /api/document-types/[id] - Update document type (Admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -71,7 +73,7 @@ export async function PATCH(
     const { label, isActive } = body;
 
     const documentType = await db.documentType.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(label && { label }),
         ...(isActive !== undefined && { isActive })

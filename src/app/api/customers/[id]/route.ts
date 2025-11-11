@@ -2,21 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions, hasRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { logActivity } from '@/lib/activity-log';
+import { logActivity } from '@/lib/activity-logger';
 
 // GET /api/customers/[id] - Get customer by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const customer = await db.customer.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         ids: true,
         transactions: {
@@ -42,9 +43,10 @@ export async function GET(
 // DELETE /api/customers/[id] - Delete customer (Admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: customerId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -54,8 +56,6 @@ export async function DELETE(
     if (!hasRole(userRoles, 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
     }
-
-    const customerId = params.id;
 
     // Get customer before deleting for activity log
     const customer = await db.customer.findUnique({

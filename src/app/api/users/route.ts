@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions, hasRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import bcrypt from 'bcrypt';
-import { logActivity } from '@/lib/activity-log';
+import { logActivity } from '@/lib/activity-logger';
 
 // POST - Create a new user (Admin only)
 export async function POST(request: NextRequest) {

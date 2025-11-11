@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions, hasRole } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { logActivity } from '@/lib/activity-log';
+import { logActivity } from '@/lib/activity-logger';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: userId } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -18,8 +19,6 @@ export async function DELETE(
     if (!hasRole(userRoles, 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 });
     }
-
-    const userId = params.id;
 
     // Get user before deleting for activity log
     const user = await db.user.findUnique({

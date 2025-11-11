@@ -7,9 +7,10 @@ import { join } from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; fileId: string } }
+  { params }: { params: Promise<{ id: string; fileId: string }> }
 ) {
   try {
+    const { id, fileId } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,11 +18,11 @@ export async function GET(
 
     // Find the file record
     const file = await db.customerIdFile.findUnique({
-      where: { id: params.fileId },
+      where: { id: fileId },
       include: { customer: true }
     });
 
-    if (!file || file.customerId !== params.id) {
+    if (!file || file.customerId !== id) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 

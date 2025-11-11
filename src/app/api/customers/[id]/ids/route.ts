@@ -14,9 +14,10 @@ export const config = {
 // POST /api/customers/[id]/ids - Upload ID file
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +25,7 @@ export async function POST(
 
     // Check if customer exists
     const customer = await db.customer.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!customer) {

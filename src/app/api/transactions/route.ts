@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { TransactionSchema } from '@/lib/validators';
 import { nextTxnNumber } from '@/lib/ids';
-import { logTransactionActivity, getRequestInfo } from '@/lib/activity-log';
+import { logTransactionActivity, getRequestInfo } from '@/lib/activity-logger';
 
 // GET /api/transactions - List transactions with optional filters
 export async function GET(request: NextRequest) {
