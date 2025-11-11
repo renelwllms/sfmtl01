@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState, useEffect } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,6 +10,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [ssoEnabled, setSsoEnabled] = useState(false);
+
+  useEffect(() => {
+    // Check if SSO is enabled by checking if config endpoint returns SSO status
+    fetch('/api/auth/sso-status')
+      .then(res => res.json())
+      .then(data => setSsoEnabled(data.enabled))
+      .catch(() => setSsoEnabled(false));
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,6 +41,18 @@ export default function LoginPage() {
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
+      setLoading(false);
+    }
+  }
+
+  async function handleOffice365Login() {
+    setError('');
+    setLoading(true);
+
+    try {
+      await signIn('azure-ad', { callbackUrl: '/' });
+    } catch (err) {
+      setError('Failed to sign in with Office 365');
       setLoading(false);
     }
   }
@@ -99,6 +120,37 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
+
+        {/* Office 365 SSO Option */}
+        {ssoEnabled && (
+          <>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={handleOffice365Login}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M0 0h10.931v10.931H0V0z" fill="#f25022"/>
+                  <path d="M12.069 0H23v10.931H12.069V0z" fill="#7fba00"/>
+                  <path d="M0 12.069h10.931V23H0V12.069z" fill="#00a4ef"/>
+                  <path d="M12.069 12.069H23V23H12.069V12.069z" fill="#ffb900"/>
+                </svg>
+                Sign in with Office 365
+              </button>
+            </div>
+          </>
+        )}
 
         <div className="mt-4 text-center text-xs text-gray-500">
           <p>Test Credentials:</p>
