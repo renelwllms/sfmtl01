@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 // GET /api/agents/[id]/transactions - Get transactions for a specific agent
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,9 +14,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
-    const date = searchParams.get('date'); // YYYY-MM-DD for specific day
+    const date = searchParams.get('date'); // YYYY-MM-DD for specific day (legacy support)
+    const startDate = searchParams.get('startDate'); // YYYY-MM-DD for range start
+    const endDate = searchParams.get('endDate'); // YYYY-MM-DD for range end
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
 
@@ -25,8 +27,17 @@ export async function GET(
       agentId: id === 'head-office' ? null : id
     };
 
-    // Filter by date if provided
-    if (date) {
+    // Filter by date range if provided
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setDate(end.getDate() + 1); // Include the end date
+      where.date = {
+        gte: start,
+        lt: end
+      };
+    } else if (date) {
+      // Legacy single date support
       const targetDate = new Date(date);
       const nextDay = new Date(targetDate);
       nextDay.setDate(nextDay.getDate() + 1);

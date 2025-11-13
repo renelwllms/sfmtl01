@@ -48,7 +48,17 @@
       "Bash(net stop:*)",
       "Bash(sc query:*)",
       "Bash(nslookup:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsx:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(move /Y:*)",
+      "Bash(del /Q nul 2)",
+      "Bash(.gitignore)",
+      "Bash(node scripts/grant-admin.js:*)",
+      "Bash(dir)",
+      "Bash(rd /S /Q \"C:\\temp\\CursorRepo\\SFMTL\\samoa-finance-app\\src\\app\\api\\customers\\[customerId]\" 2)",
+      "Bash(dir \"C:\\temp\\CursorRepo\\SFMTL\\samoa-finance-app\\src\\app\\api\\public\\customers\\[id]\\ids\\[fileId]\")",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

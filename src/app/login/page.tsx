@@ -11,6 +11,12 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [ssoEnabled, setSsoEnabled] = useState(false);
+  const [branding, setBranding] = useState<{
+    businessName: string;
+    fontSize: string;
+    fontColor: string;
+    fontFamily: string;
+  } | null>(null);
 
   useEffect(() => {
     // Check if SSO is enabled by checking if config endpoint returns SSO status
@@ -18,6 +24,21 @@ export default function LoginPage() {
       .then(res => res.json())
       .then(data => setSsoEnabled(data.enabled))
       .catch(() => setSsoEnabled(false));
+
+    // Fetch branding settings
+    fetch('/api/public/branding')
+      .then(res => res.json())
+      .then(data => {
+        if (data.settings) {
+          setBranding({
+            businessName: data.settings.businessName,
+            fontSize: data.settings.fontSize,
+            fontColor: data.settings.fontColor,
+            fontFamily: data.settings.fontFamily
+          });
+        }
+      })
+      .catch(err => console.error('Failed to fetch branding:', err));
   }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -61,11 +82,32 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-xl">
         <div>
-          <h2 className="text-center text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            🌴 Samoa Finance
-          </h2>
+          {branding ? (
+            <h2
+              className="text-center font-bold"
+              style={{
+                fontSize: `${Math.max(24, Math.min(parseInt(branding.fontSize), 48))}px`,
+                color: branding.fontColor,
+                fontFamily: branding.fontFamily
+              }}
+            >
+              {branding.businessName}
+            </h2>
+          ) : (
+            <h2 className="text-center text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              🌴 Samoa Finance
+            </h2>
+          )}
           <p className="mt-2 text-center text-sm text-gray-600">
-            Money Transfer System
+            Developed and Hosted by{' '}
+            <a
+              href="https://edgepoint.co.nz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+            >
+              Edgepoint
+            </a>
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

@@ -189,6 +189,7 @@ export default function AgentsTab({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {agents.map((agent) => {
+              const portalUrl = `${baseUrl}/portal/${agent.agentCode}`;
               const registerUrl = `${baseUrl}/register/${agent.agentCode}`;
 
               return (
@@ -255,29 +256,51 @@ export default function AgentsTab({
 
                   {/* QR Code */}
                   <div className="border-t pt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-3">Registration QR Code:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-3">Agent Portal QR Code:</p>
                     <div className="flex flex-col items-center gap-3">
                       <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-                        <QRCodeSVG value={registerUrl} size={150} level="H" />
+                        <QRCodeSVG value={portalUrl} size={150} level="H" />
                       </div>
-                      <div className="w-full">
-                        <p className="text-xs text-gray-500 mb-1">Registration URL:</p>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={registerUrl}
-                            readOnly
-                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-gray-50"
-                          />
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(registerUrl);
-                              alert('URL copied to clipboard!');
-                            }}
-                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                          >
-                            Copy
-                          </button>
+                      <div className="w-full space-y-2">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Portal URL:</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={portalUrl}
+                              readOnly
+                              className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-gray-50"
+                            />
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(portalUrl);
+                                alert('Portal URL copied to clipboard!');
+                              }}
+                              className="px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Registration URL (legacy):</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={registerUrl}
+                              readOnly
+                              className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded-md bg-gray-50"
+                            />
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(registerUrl);
+                                alert('Registration URL copied to clipboard!');
+                              }}
+                              className="px-3 py-1 text-xs bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                            >
+                              Copy
+                            </button>
+                          </div>
                         </div>
                       </div>
                       <button

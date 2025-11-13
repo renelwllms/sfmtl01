@@ -30,13 +30,17 @@ export default function AgentTransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const agentId = params.id as string;
-  const dateParam = searchParams.get('date');
+  const startDateParam = searchParams.get('startDate');
+  const endDateParam = searchParams.get('endDate');
 
   const [agent, setAgent] = useState<any>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [totals, setTotals] = useState({ transactionCount: 0, totalPaidNzd: 0 });
-  const [selectedDate, setSelectedDate] = useState(
-    dateParam || new Date().toISOString().split('T')[0]
+  const [startDate, setStartDate] = useState(
+    startDateParam || new Date().toISOString().split('T')[0]
+  );
+  const [endDate, setEndDate] = useState(
+    endDateParam || new Date().toISOString().split('T')[0]
   );
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -52,7 +56,7 @@ export default function AgentTransactionsPage() {
       fetchAgent();
     }
     fetchTransactions();
-  }, [agentId, selectedDate, page]);
+  }, [agentId, startDate, endDate, page]);
 
   const fetchAgent = async () => {
     try {
@@ -70,7 +74,7 @@ export default function AgentTransactionsPage() {
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/agents/${agentId}/transactions?date=${selectedDate}&page=${page}&limit=50`
+        `/api/agents/${agentId}/transactions?startDate=${startDate}&endDate=${endDate}&page=${page}&limit=50`
       );
       if (response.ok) {
         const data = await response.json();
@@ -105,11 +109,11 @@ export default function AgentTransactionsPage() {
             Back to Agents
           </button>
 
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{agentName}</h1>
               <p className="text-gray-600 mt-1">
-                Daily transactions for {new Date(selectedDate).toLocaleDateString()}
+                Transactions from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
               </p>
               {agent && agent.agentCode && (
                 <p className="text-sm text-gray-500 mt-1">
@@ -118,24 +122,46 @@ export default function AgentTransactionsPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <input
                 type="date"
-                value={selectedDate}
+                value={startDate}
                 onChange={(e) => {
-                  setSelectedDate(e.target.value);
+                  setStartDate(e.target.value);
+                  setPage(1);
+                }}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-gray-500">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
                   setPage(1);
                 }}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={() => {
-                  setSelectedDate(new Date().toISOString().split('T')[0]);
+                  const today = new Date().toISOString().split('T')[0];
+                  setStartDate(today);
+                  setEndDate(today);
                   setPage(1);
                 }}
                 className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
               >
                 Today
+              </button>
+              <button
+                onClick={() => {
+                  setStartDate('');
+                  setEndDate('');
+                  setPage(1);
+                }}
+                className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+              >
+                Clear Filter
               </button>
             </div>
           </div>

@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
     // Remove this if you want strict type checking
     ignoreBuildErrors: false,
   },
+  // Allow dev server access from network IP
+  allowedDevOrigins: [
+    'http://192.168.1.148:3000',
+    'http://localhost:3000',
+  ],
 };
 
 export default nextConfig;

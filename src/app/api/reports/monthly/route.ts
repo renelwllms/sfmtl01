@@ -50,6 +50,13 @@ export async function GET(request: NextRequest) {
             fullName: true,
             phone: true
           }
+        },
+        agent: {
+          select: {
+            id: true,
+            name: true,
+            agentCode: true
+          }
         }
       },
       orderBy: { createdAt: 'asc' }
@@ -79,13 +86,15 @@ export async function GET(request: NextRequest) {
     if (format === 'csv') {
       // Generate CSV
       const csvRows = [
-        ['Transaction Number', 'Date', 'Customer ID', 'Customer Name', 'Beneficiary', 'Currency', 'Amount NZD', 'Fee NZD', 'Total Paid NZD', 'Rate', 'Foreign Amount'].join(',')
+        ['Transaction Number', 'Date', 'Source', 'Customer ID', 'Customer Name', 'Beneficiary', 'Currency', 'Amount NZD', 'Fee NZD', 'Total Paid NZD', 'Rate', 'Foreign Amount'].join(',')
       ];
 
       transactions.forEach(txn => {
+        const source = txn.agent ? `${txn.agent.name} (${txn.agent.agentCode})` : 'Head Office';
         csvRows.push([
           txn.txnNumber,
           txn.date.toISOString(),
+          source,
           txn.customer.customerId,
           txn.customer.fullName,
           txn.beneficiaryName,

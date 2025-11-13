@@ -30,7 +30,10 @@ interface DailyStats {
 export default function AgentsPage() {
   const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedDate, setSelectedDate] = useState(
+  const [startDate, setStartDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
+  const [endDate, setEndDate] = useState(
     new Date().toISOString().split('T')[0]
   );
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
@@ -44,7 +47,7 @@ export default function AgentsPage() {
     if (agents.length > 0) {
       fetchDailyStats();
     }
-  }, [selectedDate, agents]);
+  }, [startDate, endDate, agents]);
 
   const fetchAgents = async () => {
     try {
@@ -67,7 +70,7 @@ export default function AgentsPage() {
       // Fetch stats for each agent
       for (const agent of agents) {
         const response = await fetch(
-          `/api/agents/${agent.id}/transactions?date=${selectedDate}&limit=1000`
+          `/api/agents/${agent.id}/transactions?startDate=${startDate}&endDate=${endDate}&limit=10000`
         );
         if (response.ok) {
           const data = await response.json();
@@ -82,7 +85,7 @@ export default function AgentsPage() {
 
       // Fetch head office stats
       const headOfficeResponse = await fetch(
-        `/api/agents/head-office/transactions?date=${selectedDate}&limit=1000`
+        `/api/agents/head-office/transactions?startDate=${startDate}&endDate=${endDate}&limit=10000`
       );
       if (headOfficeResponse.ok) {
         const data = await headOfficeResponse.json();
@@ -102,7 +105,7 @@ export default function AgentsPage() {
 
   const handleViewTransactions = (agentId: string | null) => {
     const id = agentId || 'head-office';
-    router.push(`/agents/${id}?date=${selectedDate}`);
+    router.push(`/agents/${id}?startDate=${startDate}&endDate=${endDate}`);
   };
 
   const getTotalStats = () => {
@@ -136,27 +139,73 @@ export default function AgentsPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Agents Dashboard</h1>
           <p className="text-gray-600 mt-1">
-            View all agents and their daily transaction activity
+            View all agents and their transaction activity
           </p>
         </div>
 
-        {/* Date Selector */}
+        {/* Date Range Selector */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <label className="text-sm font-medium text-gray-700">
-              Select Date:
+              Date Range:
             </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <span className="text-gray-500">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
             <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              onClick={() => {
+                const today = new Date().toISOString().split('T')[0];
+                setStartDate(today);
+                setEndDate(today);
+              }}
               className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
             >
               Today
+            </button>
+            <button
+              onClick={() => {
+                const today = new Date();
+                const lastWeek = new Date(today);
+                lastWeek.setDate(today.getDate() - 7);
+                setStartDate(lastWeek.toISOString().split('T')[0]);
+                setEndDate(today.toISOString().split('T')[0]);
+              }}
+              className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
+            >
+              Last 7 Days
+            </button>
+            <button
+              onClick={() => {
+                const today = new Date();
+                const lastMonth = new Date(today);
+                lastMonth.setDate(today.getDate() - 30);
+                setStartDate(lastMonth.toISOString().split('T')[0]);
+                setEndDate(today.toISOString().split('T')[0]);
+              }}
+              className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
+            >
+              Last 30 Days
+            </button>
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+            >
+              Clear Filter
             </button>
           </div>
         </div>
@@ -183,7 +232,7 @@ export default function AgentsPage() {
                 <BanknotesIcon className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Daily Transactions</p>
+                <p className="text-sm text-gray-600">Total Transactions</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {totalStats.transactions}
                 </p>
@@ -197,7 +246,7 @@ export default function AgentsPage() {
                 <BanknotesIcon className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Daily Total (NZD)</p>
+                <p className="text-sm text-gray-600">Total Amount (NZD)</p>
                 <p className="text-2xl font-bold text-gray-900">
                   ${totalStats.totalNzd.toFixed(2)}
                 </p>
@@ -210,7 +259,7 @@ export default function AgentsPage() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              Daily Activity for {new Date(selectedDate).toLocaleDateString()}
+              Activity from {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}
             </h2>
           </div>
 
@@ -231,10 +280,10 @@ export default function AgentsPage() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Daily Transactions
+                    Total Transactions
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Daily Total (NZD)
+                    Total Amount (NZD)
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions

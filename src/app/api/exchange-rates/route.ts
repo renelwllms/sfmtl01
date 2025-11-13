@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions, hasRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { DateTime } from 'luxon';
 
-// GET /api/exchange-rates - Get latest or specific date rates
+// GET /api/exchange-rates - Get latest or specific date rates (with profit margin applied)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,20 +19,50 @@ export async function GET(request: NextRequest) {
       where: { dateKey }
     });
 
+    // Get profit margin settings
+    const settings = await db.exchangeRateSettings.findFirst();
+    const profitMarginPercent = settings?.profitMarginPercent || 0;
+
     if (!rate) {
       // Return default rates if none found
+      const defaultRates = {
+        NZD_WST: 2.1,
+        NZD_AUD: 0.93,
+        NZD_USD: 0.61
+      };
+
+      // Apply profit margin to default rates
+      const multiplier = 1 + (profitMarginPercent / 100);
       return NextResponse.json({
         rates: {
           dateKey,
-          NZD_WST: 2.1,
-          NZD_AUD: 0.93,
-          NZD_USD: 0.61
+          NZD_WST: defaultRates.NZD_WST * multiplier,
+          NZD_AUD: defaultRates.NZD_AUD * multiplier,
+          NZD_USD: defaultRates.NZD_USD * multiplier,
+          baseNZD_WST: defaultRates.NZD_WST,
+          baseNZD_AUD: defaultRates.NZD_AUD,
+          baseNZD_USD: defaultRates.NZD_USD,
+          profitMarginPercent
         },
         isDefault: true
       });
     }
 
-    return NextResponse.json({ rates: rate, isDefault: false });
+    // Apply profit margin to actual rates
+    const multiplier = 1 + (profitMarginPercent / 100);
+    return NextResponse.json({
+      rates: {
+        ...rate,
+        baseNZD_WST: rate.NZD_WST,
+        baseNZD_AUD: rate.NZD_AUD,
+        baseNZD_USD: rate.NZD_USD,
+        NZD_WST: rate.NZD_WST * multiplier,
+        NZD_AUD: rate.NZD_AUD * multiplier,
+        NZD_USD: rate.NZD_USD * multiplier,
+        profitMarginPercent
+      },
+      isDefault: false
+    });
   } catch (error) {
     console.error('GET /api/exchange-rates error:', error);
     return NextResponse.json(
@@ -50,8 +80,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRole = (session.user as any).role;
-    if (userRole !== 'ADMIN') {
+    const userRoles = (session.user as any).roles || '';
+    if (!hasRole(userRoles, 'ADMIN')) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
@@ -98,6 +128,7 @@ export async function POST(request: NextRequest) {
         NZD_WST,
         NZD_AUD,
         NZD_USD,
+        source: 'MANUAL',
         updatedById: userId,
         updatedAt: new Date()
       },
@@ -106,6 +137,7 @@ export async function POST(request: NextRequest) {
         NZD_WST,
         NZD_AUD,
         NZD_USD,
+        source: 'MANUAL',
         updatedById: userId
       }
     });

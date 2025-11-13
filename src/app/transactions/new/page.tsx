@@ -13,6 +13,7 @@ export default function NewTransactionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedCustomerId = searchParams.get('customerId');
+  const agentCodeParam = searchParams.get('agentCode');
   const toast = useToast();
 
   const [loading, setLoading] = useState(false);
@@ -23,6 +24,7 @@ export default function NewTransactionPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [rates, setRates] = useState<any>(null);
+  const [feeSettings, setFeeSettings] = useState<any>(null);
   const [showCreateCustomer, setShowCreateCustomer] = useState(false);
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
@@ -50,7 +52,7 @@ export default function NewTransactionPage() {
   const [selectedProofDocs, setSelectedProofDocs] = useState<string[]>([]);
   const [viewingDocUrl, setViewingDocUrl] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
-  const [agentContext, setAgentContext] = useState<{id: string; code: string; name: string} | null>(null);
+  const [agentContext, setAgentContext] = useState<{id: string; code: string; name: string; location?: string} | null>(null);
 
   const [formData, setFormData] = useState({
     customerId: '',
@@ -106,18 +108,42 @@ export default function NewTransactionPage() {
 
   useEffect(() => {
     fetchRates();
+    fetchFeeSettings();
     if (preselectedCustomerId) {
       fetchCustomer(preselectedCustomerId);
     }
 
-    // Check if accessed via agent portal
-    const agentId = sessionStorage.getItem('agentId');
-    const agentCode = sessionStorage.getItem('agentCode');
-    const agentName = sessionStorage.getItem('agentName');
-    if (agentId && agentCode && agentName) {
-      setAgentContext({ id: agentId, code: agentCode, name: agentName });
+    // Check if accessed via agent portal from URL parameter
+    if (agentCodeParam) {
+      fetchAgentByCode(agentCodeParam);
+    } else {
+      // Check sessionStorage as fallback
+      const agentId = sessionStorage.getItem('agentId');
+      const agentCode = sessionStorage.getItem('agentCode');
+      const agentName = sessionStorage.getItem('agentName');
+      const agentLocation = sessionStorage.getItem('agentLocation');
+      if (agentId && agentCode && agentName) {
+        setAgentContext({ id: agentId, code: agentCode, name: agentName, location: agentLocation || undefined });
+      }
     }
   }, []);
+
+  async function fetchAgentByCode(code: string) {
+    try {
+      const response = await fetch(`/api/agents/by-code/${code}`);
+      if (response.ok) {
+        const agent = await response.json();
+        setAgentContext({
+          id: agent.id,
+          code: agent.agentCode,
+          name: agent.name,
+          location: agent.location || undefined
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch agent by code');
+    }
+  }
 
   useEffect(() => {
     if (rates && rates.rates && formData.currency) {
@@ -126,6 +152,31 @@ export default function NewTransactionPage() {
     }
   }, [formData.currency, rates]);
 
+  // Auto-calculate fee when amount changes (for percentage-based fees)
+  useEffect(() => {
+    if (feeSettings && feeSettings.feeType === 'PERCENTAGE' && formData.amountNzd) {
+      const amount = parseFloat(formData.amountNzd);
+      if (!isNaN(amount) && amount > 0) {
+        let calculatedFee = amount * (feeSettings.feePercentage / 100);
+
+        // Apply minimum fee
+        if (calculatedFee < feeSettings.minimumFeeNzd) {
+          calculatedFee = feeSettings.minimumFeeNzd;
+        }
+
+        // Apply maximum fee if set
+        if (feeSettings.maximumFeeNzd && calculatedFee > feeSettings.maximumFeeNzd) {
+          calculatedFee = feeSettings.maximumFeeNzd;
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          feeNzd: calculatedFee.toFixed(2)
+        }));
+      }
+    }
+  }, [formData.amountNzd, feeSettings]);
+
   async function fetchRates() {
     try {
       const response = await fetch('/api/exchange-rates');
@@ -133,6 +184,24 @@ export default function NewTransactionPage() {
       setRates(data);
     } catch (err) {
       console.error('Failed to fetch rates');
+    }
+  }
+
+  async function fetchFeeSettings() {
+    try {
+      const response = await fetch('/api/fees/settings');
+      const data = await response.json();
+      setFeeSettings(data.settings);
+
+      // Auto-populate fee if it's a fixed fee and fee field is empty
+      if (data.settings && data.settings.feeType === 'FIXED' && !formData.feeNzd) {
+        setFormData(prev => ({
+          ...prev,
+          feeNzd: data.settings.defaultFeeNzd.toFixed(2)
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch fee settings');
     }
   }
 
@@ -227,7 +296,19 @@ export default function NewTransactionPage() {
 
   async function searchCustomer(e: FormEvent) {
     e.preventDefault();
-    if (!searchTerm) return;
+    if (!searchTerm || searchTerm.trim().length === 0) {
+      setError('Please enter a search term');
+      return;
+    }
+
+    // Clear any previous errors
+    setError('');
+
+    // If searchTerm is less than 2 characters, show error
+    if (searchTerm.trim().length < 2) {
+      setError('Please enter at least 2 characters');
+      return;
+    }
 
     try {
       // Always use fuzzy search for better UX
@@ -241,6 +322,7 @@ export default function NewTransactionPage() {
           setError('No customers found');
           setCustomer(null);
           setSearchResults([]);
+          setShowResults(false);
         } else if (customers.length === 1) {
           // If only one result, auto-select it
           selectCustomer(customers[0]);
@@ -252,9 +334,13 @@ export default function NewTransactionPage() {
       } else {
         setError('Customer not found');
         setCustomer(null);
+        setSearchResults([]);
+        setShowResults(false);
       }
     } catch (err) {
       setError('Failed to search customer');
+      setSearchResults([]);
+      setShowResults(false);
     }
   }
 
@@ -438,7 +524,7 @@ export default function NewTransactionPage() {
       }
 
       toast.success(`Transaction created successfully! TXN: ${data.transaction.txnNumber}`);
-      router.push('/');
+      router.push('/transactions/list');
     } catch (err) {
       setError('An error occurred. Please try again.');
       setLoading(false);

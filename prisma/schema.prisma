@@ -188,8 +188,11 @@ model ExchangeRate {
   NZD_WST     Float
   NZD_AUD     Float
   NZD_USD     Float
-  updatedById String
+  source      String   @default("MANUAL") // "API" or "MANUAL"
+  apiResponse String?  // JSON response from API (for debugging)
+  updatedById String?
   updatedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
 }
 
 model Counter {
@@ -261,6 +264,42 @@ model EmailSettings {
   senderName   String?  // Display name for sender
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model ExchangeRateSettings {
+  id                    String   @id @default(cuid())
+  autoUpdateEnabled     Boolean  @default(false)
+  updateFrequencyHours  Int      @default(24) // How often to check for updates (in hours)
+  profitMarginPercent   Float    @default(0.0) // Profit margin % to add to rates
+  lastAutoUpdateAt      DateTime?
+  nextAutoUpdateAt      DateTime?
+  updatedById           String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model FeeSettings {
+  id                String   @id @default(cuid())
+  defaultFeeNzd     Float    @default(5.0) // Default transaction fee in NZD
+  feeType           String   @default("FIXED") // "FIXED" or "PERCENTAGE"
+  feePercentage     Float    @default(0.0) // If percentage-based, the percentage to charge
+  minimumFeeNzd     Float    @default(0.0) // Minimum fee if using percentage
+  maximumFeeNzd     Float?   // Maximum fee if using percentage (optional)
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model BusinessBrandingSettings {
+  id                String   @id @default(cuid())
+  businessName      String   @default("Samoa Finance Money Transfer")
+  fontSize          String   @default("36") // Font size in pixels
+  fontColor         String   @default("#1e40af") // Hex color
+  fontFamily        String   @default("Inter") // Font family name
+  footerText        String?  // Footer text to display globally
+  updatedById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Agent {

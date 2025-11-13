@@ -41,7 +41,7 @@ interface DocumentType {
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const { settings: uiSettings, updateSettings } = useUI();
-  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email' | 'agents' | 'database' | 'transaction-status'>('rates');
+  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email' | 'agents' | 'database' | 'transaction-status' | 'branding'>('rates');
 
   // Exchange Rates State
   const [rateDate, setRateDate] = useState('');
@@ -53,6 +53,36 @@ export default function SettingsPage() {
   const [rateMessage, setRateMessage] = useState('');
   const [rateError, setRateError] = useState('');
   const [savingRates, setSavingRates] = useState(false);
+  const [updatingRates, setUpdatingRates] = useState(false);
+  const [rateSource, setRateSource] = useState<string>('');
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [rateSettings, setRateSettings] = useState({
+    autoUpdateEnabled: false,
+    updateFrequencyHours: 24,
+    profitMarginPercent: 0
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState('');
+  const [feeSettings, setFeeSettings] = useState({
+    defaultFeeNzd: 5.0,
+    feeType: 'FIXED',
+    feePercentage: 0,
+    minimumFeeNzd: 0,
+    maximumFeeNzd: null as number | null
+  });
+  const [savingFeeSettings, setSavingFeeSettings] = useState(false);
+  const [feeSettingsMessage, setFeeSettingsMessage] = useState('');
+
+  // Business Branding State
+  const [brandingSettings, setBrandingSettings] = useState({
+    businessName: 'Samoa Finance Money Transfer',
+    fontSize: '36',
+    fontColor: '#1e40af',
+    fontFamily: 'Inter',
+    footerText: 'Samoa Finance Money Transfer Limited | Developed & Hosted by Edgepoint'
+  });
+  const [savingBranding, setSavingBranding] = useState(false);
+  const [brandingMessage, setBrandingMessage] = useState('');
 
   // User Management State
   const [newUser, setNewUser] = useState({
@@ -137,6 +167,8 @@ export default function SettingsPage() {
     const today = new Date().toISOString().split('T')[0];
     setRateDate(today);
     fetchRates(today);
+    fetchRateSettings();
+    fetchFeeSettings();
   }, []);
 
   useEffect(() => {
@@ -154,6 +186,8 @@ export default function SettingsPage() {
       fetchAgents();
     } else if (activeTab === 'database') {
       fetchDatabaseSettings();
+    } else if (activeTab === 'branding') {
+      fetchBrandingSettings();
     }
   }, [activeTab]);
 
@@ -167,9 +201,173 @@ export default function SettingsPage() {
           NZD_AUD: data.rates.NZD_AUD.toString(),
           NZD_USD: data.rates.NZD_USD.toString()
         });
+        setRateSource(data.rates.source || 'MANUAL');
+        setLastUpdated(data.rates.updatedAt || '');
       }
     } catch (err) {
       console.error('Failed to fetch rates');
+    }
+  }
+
+  async function updateRatesFromAPI() {
+    setRateError('');
+    setRateMessage('');
+    setUpdatingRates(true);
+
+    try {
+      const response = await fetch('/api/exchange-rates/update', {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setRateError(data.error || 'Failed to update rates from API');
+      } else {
+        setRateMessage(`Exchange rates updated successfully from API! Next update: ${data.apiInfo?.nextUpdate || 'N/A'}`);
+        // Refresh the rates on the current date
+        if (rateDate) {
+          fetchRates(rateDate);
+        }
+        setTimeout(() => setRateMessage(''), 5000);
+      }
+    } catch (err) {
+      setRateError('An error occurred while updating rates from API');
+    } finally {
+      setUpdatingRates(false);
+    }
+  }
+
+  async function fetchRateSettings() {
+    try {
+      const response = await fetch('/api/exchange-rates/settings');
+      const data = await response.json();
+      if (data.settings) {
+        setRateSettings({
+          autoUpdateEnabled: data.settings.autoUpdateEnabled,
+          updateFrequencyHours: data.settings.updateFrequencyHours,
+          profitMarginPercent: data.settings.profitMarginPercent
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch rate settings');
+    }
+  }
+
+  async function fetchFeeSettings() {
+    try {
+      const response = await fetch('/api/fees/settings');
+      const data = await response.json();
+      if (data.settings) {
+        setFeeSettings({
+          defaultFeeNzd: data.settings.defaultFeeNzd,
+          feeType: data.settings.feeType,
+          feePercentage: data.settings.feePercentage,
+          minimumFeeNzd: data.settings.minimumFeeNzd,
+          maximumFeeNzd: data.settings.maximumFeeNzd
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch fee settings');
+    }
+  }
+
+  async function saveFeeSettings() {
+    setFeeSettingsMessage('');
+    setRateError('');
+    setSavingFeeSettings(true);
+
+    try {
+      const response = await fetch('/api/fees/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feeSettings)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setRateError(data.error || 'Failed to save fee settings');
+      } else {
+        setFeeSettingsMessage('Fee settings saved successfully!');
+        setTimeout(() => setFeeSettingsMessage(''), 3000);
+      }
+    } catch (err) {
+      setRateError('An error occurred while saving fee settings');
+    } finally {
+      setSavingFeeSettings(false);
+    }
+  }
+
+  async function fetchBrandingSettings() {
+    try {
+      const response = await fetch('/api/branding');
+      const data = await response.json();
+
+      if (response.ok && data.settings) {
+        setBrandingSettings({
+          businessName: data.settings.businessName,
+          fontSize: data.settings.fontSize,
+          fontColor: data.settings.fontColor,
+          fontFamily: data.settings.fontFamily,
+          footerText: data.settings.footerText || ''
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch branding settings:', err);
+    }
+  }
+
+  async function saveBrandingSettings() {
+    setBrandingMessage('');
+    setSavingBranding(true);
+
+    try {
+      const response = await fetch('/api/branding', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brandingSettings)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setBrandingMessage(data.error || 'Failed to save branding settings');
+      } else {
+        setBrandingMessage('✓ Branding settings saved successfully!');
+        setTimeout(() => setBrandingMessage(''), 3000);
+      }
+    } catch (err) {
+      setBrandingMessage('An error occurred while saving branding settings');
+    } finally {
+      setSavingBranding(false);
+    }
+  }
+
+  async function saveRateSettings() {
+    setSettingsMessage('');
+    setRateError('');
+    setSavingSettings(true);
+
+    try {
+      const response = await fetch('/api/exchange-rates/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rateSettings)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setRateError(data.error || 'Failed to save settings');
+      } else {
+        setSettingsMessage('Settings saved successfully!');
+        setTimeout(() => setSettingsMessage(''), 3000);
+      }
+    } catch (err) {
+      setRateError('An error occurred while saving settings');
+    } finally {
+      setSavingSettings(false);
     }
   }
 
@@ -757,6 +955,16 @@ export default function SettingsPage() {
               >
                 Database
               </button>
+              <button
+                onClick={() => setActiveTab('branding')}
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
+                  activeTab === 'branding'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Branding & Footer
+              </button>
             </div>
           </div>
 
@@ -765,9 +973,302 @@ export default function SettingsPage() {
             {activeTab === 'rates' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Set Exchange Rates</h2>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Set the exchange rates for a specific date. These rates will be used when creating new transactions.
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Exchange Rates</h2>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Update exchange rates automatically from exchangerate-api.com or set them manually for a specific date.
+                  </p>
+                  {rateSource && (
+                    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                      rateSource === 'API' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      <span className="w-2 h-2 rounded-full bg-current"></span>
+                      {rateSource === 'API' ? 'Updated from API' : 'Manual Entry'}
+                      {lastUpdated && ` • ${new Date(lastUpdated).toLocaleString()}`}
+                    </div>
+                  )}
+                </div>
+
+                {/* Auto-Update Section */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-blue-900 mb-1">Automatic Rate Updates</h3>
+                      <p className="text-xs text-blue-700 mb-3">
+                        Fetch the latest exchange rates from exchangerate-api.com. Rates are updated in real-time from global forex markets.
+                      </p>
+                    </div>
+                    <button
+                      onClick={updateRatesFromAPI}
+                      disabled={updatingRates}
+                      className="ml-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {updatingRates ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Update from API
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Settings Section */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Rate Settings</h3>
+
+                  <div className="space-y-6">
+                    {/* Auto-Update Toggle */}
+                    <div className="flex items-start">
+                      <div className="flex items-center h-5">
+                        <input
+                          id="autoUpdate"
+                          type="checkbox"
+                          checked={rateSettings.autoUpdateEnabled}
+                          onChange={(e) => setRateSettings({ ...rateSettings, autoUpdateEnabled: e.target.checked })}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="ml-3">
+                        <label htmlFor="autoUpdate" className="font-medium text-gray-900 text-sm">
+                          Enable Automatic Updates
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Automatically fetch new rates from the API based on the frequency below
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Update Frequency */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Update Frequency (hours)
+                      </label>
+                      <select
+                        value={rateSettings.updateFrequencyHours}
+                        onChange={(e) => setRateSettings({ ...rateSettings, updateFrequencyHours: parseInt(e.target.value) })}
+                        className="block w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md bg-white"
+                        disabled={!rateSettings.autoUpdateEnabled}
+                      >
+                        <option value="1">Every hour</option>
+                        <option value="3">Every 3 hours</option>
+                        <option value="6">Every 6 hours</option>
+                        <option value="12">Every 12 hours</option>
+                        <option value="24">Once a day (24 hours)</option>
+                        <option value="48">Every 2 days</option>
+                        <option value="72">Every 3 days</option>
+                        <option value="168">Once a week</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        How often the system should check for new rates
+                      </p>
+                    </div>
+
+                    {/* Profit Margin */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Profit Margin (%)
+                      </label>
+                      <div className="flex items-center gap-3 max-w-xs">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          value={rateSettings.profitMarginPercent}
+                          onChange={(e) => setRateSettings({ ...rateSettings, profitMarginPercent: parseFloat(e.target.value) || 0 })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                          placeholder="0.0"
+                        />
+                        <span className="text-gray-600 font-medium">%</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        This percentage will be added to all exchange rates. For example, 5% means customers pay 5% more than the base rate.
+                      </p>
+                      {rateSettings.profitMarginPercent > 0 && (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <p className="text-xs text-blue-800">
+                            <strong>Example:</strong> If base rate is 2.1000, with {rateSettings.profitMarginPercent}% margin,
+                            customers will see {(2.1 * (1 + rateSettings.profitMarginPercent / 100)).toFixed(4)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {settingsMessage && (
+                      <div className="rounded-md bg-green-50 p-3 border border-green-200">
+                        <p className="text-sm text-green-800">{settingsMessage}</p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={saveRateSettings}
+                      disabled={savingSettings}
+                      className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 font-medium"
+                    >
+                      {savingSettings ? 'Saving...' : 'Save Settings'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Fee Settings Section */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Fee Settings</h3>
+
+                  <div className="space-y-6">
+                    {/* Fee Type */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Fee Type
+                      </label>
+                      <select
+                        value={feeSettings.feeType}
+                        onChange={(e) => setFeeSettings({ ...feeSettings, feeType: e.target.value })}
+                        className="block w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md bg-white"
+                      >
+                        <option value="FIXED">Fixed Amount (NZD)</option>
+                        <option value="PERCENTAGE">Percentage of Transaction</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Choose whether to charge a fixed fee or a percentage
+                      </p>
+                    </div>
+
+                    {/* Fixed Fee */}
+                    {feeSettings.feeType === 'FIXED' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Default Fee (NZD)
+                        </label>
+                        <div className="flex items-center gap-3 max-w-xs">
+                          <span className="text-gray-600 font-medium">$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={feeSettings.defaultFeeNzd}
+                            onChange={(e) => setFeeSettings({ ...feeSettings, defaultFeeNzd: parseFloat(e.target.value) || 0 })}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                            placeholder="5.00"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          This fixed amount will be auto-populated in the transaction fee field
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Percentage Fee */}
+                    {feeSettings.feeType === 'PERCENTAGE' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Fee Percentage
+                          </label>
+                          <div className="flex items-center gap-3 max-w-xs">
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              max="100"
+                              value={feeSettings.feePercentage}
+                              onChange={(e) => setFeeSettings({ ...feeSettings, feePercentage: parseFloat(e.target.value) || 0 })}
+                              className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                              placeholder="2.0"
+                            />
+                            <span className="text-gray-600 font-medium">%</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Percentage of the transaction amount
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Minimum Fee (NZD)
+                          </label>
+                          <div className="flex items-center gap-3 max-w-xs">
+                            <span className="text-gray-600 font-medium">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={feeSettings.minimumFeeNzd}
+                              onChange={(e) => setFeeSettings({ ...feeSettings, minimumFeeNzd: parseFloat(e.target.value) || 0 })}
+                              className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                              placeholder="2.00"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Minimum fee to charge even if percentage is lower
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Maximum Fee (NZD) - Optional
+                          </label>
+                          <div className="flex items-center gap-3 max-w-xs">
+                            <span className="text-gray-600 font-medium">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={feeSettings.maximumFeeNzd || ''}
+                              onChange={(e) => setFeeSettings({ ...feeSettings, maximumFeeNzd: e.target.value ? parseFloat(e.target.value) : null })}
+                              className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                              placeholder="50.00"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Maximum fee to cap percentage-based fees (leave empty for no cap)
+                          </p>
+                        </div>
+
+                        {feeSettings.feePercentage > 0 && (
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <p className="text-xs text-blue-800">
+                              <strong>Example:</strong> For a $100 NZD transaction with {feeSettings.feePercentage}% fee:
+                              <br />
+                              Fee = ${(100 * feeSettings.feePercentage / 100).toFixed(2)}
+                              {feeSettings.minimumFeeNzd > 0 && ` (minimum: $${feeSettings.minimumFeeNzd.toFixed(2)})`}
+                              {feeSettings.maximumFeeNzd && ` (maximum: $${feeSettings.maximumFeeNzd.toFixed(2)})`}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {feeSettingsMessage && (
+                      <div className="rounded-md bg-green-50 p-3 border border-green-200">
+                        <p className="text-sm text-green-800">{feeSettingsMessage}</p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={saveFeeSettings}
+                      disabled={savingFeeSettings}
+                      className="px-6 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 font-medium"
+                    >
+                      {savingFeeSettings ? 'Saving...' : 'Save Fee Settings'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Manual Entry Section */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Manual Entry</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Optionally set custom exchange rates for a specific date. This will override API rates.
                   </p>
                 </div>
 
@@ -1823,6 +2324,181 @@ export default function SettingsPage() {
                     </div>
                   </form>
                 )}
+              </div>
+            )}
+
+            {/* Branding & Footer Tab */}
+            {activeTab === 'branding' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Business Branding & Footer</h2>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Customize your business name appearance on the agent portal and add a global footer message across the application.
+                  </p>
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); saveBrandingSettings(); }} className="space-y-6">
+                  {/* Business Name Section */}
+                  <div className="rounded-lg border border-gray-200 p-6 bg-white">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Name Display</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      This name will be displayed prominently on the agent portal landing pages.
+                    </p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Business Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={brandingSettings.businessName}
+                          onChange={(e) => setBrandingSettings({ ...brandingSettings, businessName: e.target.value })}
+                          className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Samoa Finance Money Transfer"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Font Size (px)
+                          </label>
+                          <input
+                            type="number"
+                            value={brandingSettings.fontSize}
+                            onChange={(e) => setBrandingSettings({ ...brandingSettings, fontSize: e.target.value })}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="36"
+                            min="12"
+                            max="72"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">Recommended: 24-48px</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Font Color
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={brandingSettings.fontColor}
+                              onChange={(e) => setBrandingSettings({ ...brandingSettings, fontColor: e.target.value })}
+                              className="h-10 w-20 border border-gray-300 rounded-md cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={brandingSettings.fontColor}
+                              onChange={(e) => setBrandingSettings({ ...brandingSettings, fontColor: e.target.value })}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="#1e40af"
+                            />
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">Hex color code</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Font Family
+                          </label>
+                          <select
+                            value={brandingSettings.fontFamily}
+                            onChange={(e) => setBrandingSettings({ ...brandingSettings, fontFamily: e.target.value })}
+                            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="Inter">Inter (Default)</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Roboto">Roboto</option>
+                            <option value="Open Sans">Open Sans</option>
+                            <option value="Lato">Lato</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Preview */}
+                      <div className="mt-6 p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 rounded-lg border border-gray-200">
+                        <p className="text-xs text-gray-600 mb-3">Preview:</p>
+                        <div className="text-center">
+                          <h1
+                            style={{
+                              fontSize: `${brandingSettings.fontSize}px`,
+                              color: brandingSettings.fontColor,
+                              fontFamily: brandingSettings.fontFamily,
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            {brandingSettings.businessName}
+                          </h1>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Section */}
+                  <div className="rounded-lg border border-gray-200 p-6 bg-white">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Global Footer</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Add a footer message that will appear at the bottom of all pages in the application.
+                    </p>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Footer Text
+                      </label>
+                      <textarea
+                        value={brandingSettings.footerText}
+                        onChange={(e) => setBrandingSettings({ ...brandingSettings, footerText: e.target.value })}
+                        rows={3}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Samoa Finance Money Transfer Limited | Developed & Hosted by Edgepoint"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Leave empty to hide the footer. Use | to separate sections.
+                      </p>
+                    </div>
+
+                    {/* Footer Preview */}
+                    {brandingSettings.footerText && (
+                      <div className="mt-4">
+                        <p className="text-xs text-gray-600 mb-2">Footer Preview:</p>
+                        <div className="bg-gray-100 border-t border-gray-200 py-3 text-center rounded-md">
+                          <p className="text-sm text-gray-600">{brandingSettings.footerText}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Success/Error Messages */}
+                  {brandingMessage && (
+                    <div className={`rounded-md p-4 ${
+                      brandingMessage.includes('✓') ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+                    }`}>
+                      <p className={`text-sm ${
+                        brandingMessage.includes('✓') ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        {brandingMessage}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Save Button */}
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={savingBranding}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {savingBranding ? 'Saving...' : 'Save Branding Settings'}
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

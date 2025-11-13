@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { DateTime } from 'luxon';
 
-// GET /api/reports/daily?date=YYYY-MM-DD&format=json|csv
+// GET /api/reports/daily?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&format=json|csv
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,34 +13,37 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get('date');
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
     const format = searchParams.get('format') || 'json';
 
-    if (!dateParam) {
+    if (!startDateParam || !endDateParam) {
       return NextResponse.json(
-        { error: 'date parameter is required (YYYY-MM-DD)' },
+        { error: 'startDate and endDate parameters are required (YYYY-MM-DD)' },
         { status: 400 }
       );
     }
 
-    // Parse date in Pacific/Auckland timezone
-    const date = DateTime.fromISO(dateParam, { zone: 'Pacific/Auckland' });
-    if (!date.isValid) {
+    // Parse dates in Pacific/Auckland timezone
+    const startDate = DateTime.fromISO(startDateParam, { zone: 'Pacific/Auckland' });
+    const endDate = DateTime.fromISO(endDateParam, { zone: 'Pacific/Auckland' });
+
+    if (!startDate.isValid || !endDate.isValid) {
       return NextResponse.json(
         { error: 'Invalid date format. Use YYYY-MM-DD' },
         { status: 400 }
       );
     }
 
-    const startOfDay = date.startOf('day').toJSDate();
-    const endOfDay = date.endOf('day').toJSDate();
+    const startOfPeriod = startDate.startOf('day').toJSDate();
+    const endOfPeriod = endDate.endOf('day').toJSDate();
 
-    // Fetch transactions for the day
+    // Fetch transactions for the period
     const transactions = await db.transaction.findMany({
       where: {
         date: {
-          gte: startOfDay,
-          lte: endOfDay
+          gte: startOfPeriod,
+          lte: endOfPeriod
         }
       },
       include: {
@@ -49,6 +52,13 @@ export async function GET(request: NextRequest) {
             customerId: true,
             fullName: true,
             phone: true
+          }
+        },
+        agent: {
+          select: {
+            id: true,
+            name: true,
+            agentCode: true
           }
         }
       },
@@ -71,7 +81,8 @@ export async function GET(request: NextRequest) {
     });
 
     const report = {
-      date: dateParam,
+      startDate: startDateParam,
+      endDate: endDateParam,
       summary,
       transactions
     };
@@ -79,13 +90,15 @@ export async function GET(request: NextRequest) {
     if (format === 'csv') {
       // Generate CSV
       const csvRows = [
-        ['Transaction Number', 'Date', 'Customer ID', 'Customer Name', 'Beneficiary', 'Currency', 'Amount NZD', 'Fee NZD', 'Total Paid NZD', 'Rate', 'Foreign Amount'].join(',')
+        ['Transaction Number', 'Date', 'Source', 'Customer ID', 'Customer Name', 'Beneficiary', 'Currency', 'Amount NZD', 'Fee NZD', 'Total Paid NZD', 'Rate', 'Foreign Amount'].join(',')
       ];
 
       transactions.forEach(txn => {
+        const source = txn.agent ? `${txn.agent.name} (${txn.agent.agentCode})` : 'Head Office';
         csvRows.push([
           txn.txnNumber,
           txn.date.toISOString(),
+          source,
           txn.customer.customerId,
           txn.customer.fullName,
           txn.beneficiaryName,
@@ -102,7 +115,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv',
-          'Content-Disposition': `attachment; filename="daily-report-${dateParam}.csv"`
+          'Content-Disposition': `attachment; filename="report-${startDateParam}-to-${endDateParam}.csv"`
         }
       });
     }

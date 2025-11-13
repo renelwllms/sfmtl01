@@ -8,7 +8,8 @@ type ReportType = 'daily' | 'monthly';
 
 export default function ReportsPage() {
   const [reportType, setReportType] = useState<ReportType>('daily');
-  const [date, setDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [month, setMonth] = useState('');
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any>(null);
@@ -20,7 +21,9 @@ export default function ReportsPage() {
     setReport(null);
 
     try {
-      const param = reportType === 'daily' ? `date=${date}` : `month=${month}`;
+      const param = reportType === 'daily'
+        ? `startDate=${startDate}&endDate=${endDate}`
+        : `month=${month}`;
       const response = await fetch(`/api/reports/${reportType}?${param}`);
 
       if (!response.ok) {
@@ -40,7 +43,9 @@ export default function ReportsPage() {
   }
 
   function downloadCSV() {
-    const param = reportType === 'daily' ? `date=${date}` : `month=${month}`;
+    const param = reportType === 'daily'
+      ? `startDate=${startDate}&endDate=${endDate}`
+      : `month=${month}`;
     window.open(`/api/reports/${reportType}?${param}&format=csv`, '_blank');
   }
 
@@ -84,35 +89,99 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {reportType === 'daily' ? 'Select Date' : 'Select Month'}
-              </label>
-              {reportType === 'daily' ? (
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              ) : (
+            {reportType === 'daily' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date Range
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                  <span className="text-gray-500">to</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Month
+                </label>
                 <input
                   type="month"
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          <button
-            onClick={generateReport}
-            disabled={loading || (reportType === 'daily' && !date) || (reportType === 'monthly' && !month)}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Generating...' : 'Generate Report'}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={generateReport}
+              disabled={loading || (reportType === 'daily' && (!startDate || !endDate)) || (reportType === 'monthly' && !month)}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Generating...' : 'Generate Report'}
+            </button>
+
+            {reportType === 'daily' && (
+              <>
+                <button
+                  onClick={() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    setStartDate(today);
+                    setEndDate(today);
+                  }}
+                  className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const lastWeek = new Date(today);
+                    lastWeek.setDate(today.getDate() - 7);
+                    setStartDate(lastWeek.toISOString().split('T')[0]);
+                    setEndDate(today.toISOString().split('T')[0]);
+                  }}
+                  className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200"
+                >
+                  Last 7 Days
+                </button>
+                <button
+                  onClick={() => {
+                    const today = new Date();
+                    const lastMonth = new Date(today);
+                    lastMonth.setDate(today.getDate() - 30);
+                    setStartDate(lastMonth.toISOString().split('T')[0]);
+                    setEndDate(today.toISOString().split('T')[0]);
+                  }}
+                  className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200"
+                >
+                  Last 30 Days
+                </button>
+                <button
+                  onClick={() => {
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                  className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+                >
+                  Clear Filter
+                </button>
+              </>
+            )}
+          </div>
 
           {error && (
             <div className="mt-4 rounded-md bg-red-50 p-4">
@@ -208,6 +277,7 @@ export default function ReportsPage() {
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">TXN Number</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Beneficiary</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Currency</th>
@@ -223,6 +293,16 @@ export default function ReportsPage() {
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">{txn.txnNumber}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">
                             {formatNZDate(txn.date)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {txn.agent ? (
+                              <div>
+                                <div className="font-medium text-gray-900">{txn.agent.name}</div>
+                                <div className="text-xs text-gray-500">{txn.agent.agentCode}</div>
+                              </div>
+                            ) : (
+                              <div className="font-medium text-blue-600">Head Office</div>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             <div>{txn.customer.fullName}</div>
