@@ -25,6 +25,18 @@ interface Transaction {
   createdBy: {
     email: string;
   } | null;
+  agent: {
+    id: string;
+    name: string;
+    agentCode: string;
+    isHeadOffice: boolean;
+  } | null;
+  status: {
+    id: string;
+    name: string;
+    label: string;
+    color: string;
+  } | null;
 }
 
 interface Pagination {
@@ -48,16 +60,48 @@ export default function AllTransactionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [currency, setCurrency] = useState('');
+  const [source, setSource] = useState(''); // 'agent', 'head-office', or ''
+  const [agentId, setAgentId] = useState('');
+  const [statusId, setStatusId] = useState('');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [agents, setAgents] = useState<any[]>([]);
+  const [statuses, setStatuses] = useState<any[]>([]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
+      fetchAgentsAndStatuses();
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
       fetchTransactions();
     }
-  }, [status, pagination.page, sortBy, sortOrder, currency, activeSearchTerm]);
+  }, [status, pagination.page, sortBy, sortOrder, currency, activeSearchTerm, source, agentId, statusId]);
+
+  async function fetchAgentsAndStatuses() {
+    try {
+      const [agentsRes, statusesRes] = await Promise.all([
+        fetch('/api/agents'),
+        fetch('/api/transaction-statuses')
+      ]);
+
+      if (agentsRes.ok) {
+        const agentsData = await agentsRes.json();
+        setAgents(agentsData.filter((a: any) => !a.isHeadOffice));
+      }
+
+      if (statusesRes.ok) {
+        const statusesData = await statusesRes.json();
+        setStatuses(statusesData.filter((s: any) => s.isActive));
+      }
+    } catch (error) {
+      console.error('Failed to fetch agents and statuses:', error);
+    }
+  }
 
   async function fetchTransactions() {
     setLoading(true);
@@ -68,7 +112,10 @@ export default function AllTransactionsPage() {
         sortBy,
         sortOrder,
         ...(currency && { currency }),
-        ...(activeSearchTerm && { search: activeSearchTerm })
+        ...(activeSearchTerm && { search: activeSearchTerm }),
+        ...(source && { source }),
+        ...(agentId && { agentId }),
+        ...(statusId && { statusId })
       });
 
       const response = await fetch(`/api/transactions?${params}`);
@@ -111,7 +158,7 @@ export default function AllTransactionsPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
       <Navigation />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">All Transactions</h1>
           <p className="text-gray-600 mt-1">View and search all money transfer transactions</p>
@@ -120,8 +167,8 @@ export default function AllTransactionsPage() {
         {/* Filters */}
         <div className="bg-white p-6 rounded-lg shadow mb-6">
           <form onSubmit={handleSearch} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2">
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
                   Search
                 </label>
@@ -151,6 +198,66 @@ export default function AllTransactionsPage() {
                 </select>
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="source" className="block text-sm font-medium text-gray-700 mb-1">
+                  Source
+                </label>
+                <select
+                  id="source"
+                  value={source}
+                  onChange={(e) => {
+                    setSource(e.target.value);
+                    setAgentId(''); // Clear specific agent when source changes
+                  }}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All Sources</option>
+                  <option value="head-office">Head Office</option>
+                  <option value="agent">All Agents</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="agent" className="block text-sm font-medium text-gray-700 mb-1">
+                  Specific Agent
+                </label>
+                <select
+                  id="agent"
+                  value={agentId}
+                  onChange={(e) => {
+                    setAgentId(e.target.value);
+                    setSource(''); // Clear source filter when specific agent is selected
+                  }}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  disabled={agents.length === 0}
+                >
+                  <option value="">Select Agent...</option>
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.name} ({agent.agentCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  id="status"
+                  value={statusId}
+                  onChange={(e) => setStatusId(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All Statuses</option>
+                  {statuses.map((status) => (
+                    <option key={status.id} value={status.id}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -164,6 +271,9 @@ export default function AllTransactionsPage() {
                   setSearchTerm('');
                   setActiveSearchTerm('');
                   setCurrency('');
+                  setSource('');
+                  setAgentId('');
+                  setStatusId('');
                   setPagination({ ...pagination, page: 1 });
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
@@ -193,47 +303,53 @@ export default function AllTransactionsPage() {
             <div className="p-8 text-center text-gray-600">No transactions found</div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-x-auto" style={{ maxWidth: '100%' }}>
+                <table className="w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('date')}
                       >
                         Date {sortBy === 'date' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Transaction #
+                      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Txn #
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('customer')}
                       >
                         Customer {sortBy === 'customer' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Beneficiary
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                        className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('amount')}
                       >
-                        Amount (NZD) {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        Amount {sortBy === 'amount' && (sortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Fee
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total Paid
+                      <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Currency / Received
+                      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Currency
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Source
+                      </th>
+                      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Created By
                       </th>
                     </tr>
@@ -241,32 +357,57 @@ export default function AllTransactionsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {transactions.map((txn) => (
                       <tr key={txn.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/customers/${txn.customer.id}`)}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                           {formatNZDateTime(txn.createdAt)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-blue-600">
                           {txn.txnNumber}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{txn.customer.fullName}</div>
-                          <div className="text-sm text-gray-500">{txn.customer.customerId}</div>
+                          <div className="text-xs text-gray-500">{txn.customer.customerId}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                           {txn.beneficiaryName}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-right text-gray-900 font-medium">
                           ${(txn.amountNzdCents / 100).toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-right text-gray-600">
                           ${(txn.feeNzdCents / 100).toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-right text-gray-900 font-semibold">
                           ${(txn.totalPaidNzdCents / 100).toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{txn.currency} {txn.totalForeignReceived.toFixed(2)}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          {txn.agent ? (
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{txn.agent.name}</div>
+                              <div className="text-xs text-gray-500">{txn.agent.agentCode}</div>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Head Office
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          {txn.status && (
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                              style={{
+                                backgroundColor: `${txn.status.color}20`,
+                                color: txn.status.color
+                              }}
+                            >
+                              {txn.status.label}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
                           {txn.createdBy?.email || 'N/A'}
                         </td>
                       </tr>

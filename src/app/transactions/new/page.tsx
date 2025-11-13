@@ -4,6 +4,10 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import { useToast } from '@/contexts/ToastContext';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
 
 export default function NewTransactionPage() {
   const router = useRouter();
@@ -27,12 +31,26 @@ export default function NewTransactionPage() {
     dob: '',
     phone: '',
     email: '',
-    address: ''
+    address: '',
+    // Enhanced AML fields
+    streetAddress: '',
+    suburb: '',
+    city: '',
+    postcode: '',
+    homePhone: '',
+    mobilePhone: '',
+    occupation: '',
+    employerName: '',
+    employerAddress: '',
+    employerPhone: ''
   });
   const [idFiles, setIdFiles] = useState<File[]>([]);
   const [idDocType, setIdDocType] = useState('DRIVERS_LICENSE');
   const [uploadingIds, setUploadingIds] = useState(false);
   const [selectedProofDocs, setSelectedProofDocs] = useState<string[]>([]);
+  const [viewingDocUrl, setViewingDocUrl] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
+  const [agentContext, setAgentContext] = useState<{id: string; code: string; name: string} | null>(null);
 
   const [formData, setFormData] = useState({
     customerId: '',
@@ -91,6 +109,14 @@ export default function NewTransactionPage() {
     if (preselectedCustomerId) {
       fetchCustomer(preselectedCustomerId);
     }
+
+    // Check if accessed via agent portal
+    const agentId = sessionStorage.getItem('agentId');
+    const agentCode = sessionStorage.getItem('agentCode');
+    const agentName = sessionStorage.getItem('agentName');
+    if (agentId && agentCode && agentName) {
+      setAgentContext({ id: agentId, code: agentCode, name: agentName });
+    }
   }, []);
 
   useEffect(() => {
@@ -125,7 +151,18 @@ export default function NewTransactionPage() {
           senderAddress: cust.address || '',
           senderPhone: cust.phone,
           senderEmail: cust.email || '',
-          dob: cust.dob.split('T')[0]
+          dob: cust.dob.split('T')[0],
+          // Auto-populate enhanced AML fields from customer record
+          senderStreetAddress: cust.streetAddress || '',
+          senderSuburb: cust.suburb || '',
+          senderCity: cust.city || '',
+          senderPostcode: cust.postcode || '',
+          senderHomePhone: cust.homePhone || '',
+          senderMobilePhone: cust.mobilePhone || cust.phone,
+          occupation: cust.occupation || '',
+          employerName: cust.employerName || '',
+          employerAddress: cust.employerAddress || '',
+          employerPhone: cust.employerPhone || ''
         }));
       }
     } catch (err) {
@@ -167,7 +204,18 @@ export default function NewTransactionPage() {
         senderAddress: cust.address || '',
         senderPhone: cust.phone,
         senderEmail: cust.email || '',
-        dob: cust.dob.split('T')[0]
+        dob: cust.dob.split('T')[0],
+        // Auto-populate enhanced AML fields from customer record
+        senderStreetAddress: cust.streetAddress || '',
+        senderSuburb: cust.suburb || '',
+        senderCity: cust.city || '',
+        senderPostcode: cust.postcode || '',
+        senderHomePhone: cust.homePhone || '',
+        senderMobilePhone: cust.mobilePhone || cust.phone,
+        occupation: cust.occupation || '',
+        employerName: cust.employerName || '',
+        employerAddress: cust.employerAddress || '',
+        employerPhone: cust.employerPhone || ''
       }));
     }
 
@@ -214,6 +262,13 @@ export default function NewTransactionPage() {
     e.preventDefault();
     setCreatingCustomer(true);
     setError('');
+
+    // Validate that at least one ID file is uploaded
+    if (idFiles.length === 0) {
+      setError('Please upload at least one ID document');
+      setCreatingCustomer(false);
+      return;
+    }
 
     try {
       // First, create the customer
@@ -268,7 +323,18 @@ export default function NewTransactionPage() {
         dob: '',
         phone: '',
         email: '',
-        address: ''
+        address: '',
+        // Enhanced AML fields
+        streetAddress: '',
+        suburb: '',
+        city: '',
+        postcode: '',
+        homePhone: '',
+        mobilePhone: '',
+        occupation: '',
+        employerName: '',
+        employerAddress: '',
+        employerPhone: ''
       });
       setIdFiles([]);
       setIdDocType('DRIVERS_LICENSE');
@@ -347,6 +413,12 @@ export default function NewTransactionPage() {
         id2ExpiryDate: formData.id2ExpiryDate || undefined
       };
 
+      // Include agentId if this transaction is being created via agent portal
+      const agentId = typeof window !== 'undefined' ? sessionStorage.getItem('agentId') : null;
+      if (agentId) {
+        (payload as any).agentId = agentId;
+      }
+
       const response = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -378,6 +450,30 @@ export default function NewTransactionPage() {
       <Navigation />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Agent Context Banner */}
+        {agentContext && (
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-sm text-blue-100">Agent Portal</div>
+                  <div className="font-bold text-lg">{agentContext.name}</div>
+                  <div className="text-xs text-blue-200">Code: {agentContext.code}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-blue-100">All transactions will be</div>
+                <div className="text-sm font-semibold">tracked to this agent</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white p-6 rounded-lg shadow">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">New Transaction</h1>
 
@@ -473,18 +569,17 @@ export default function NewTransactionPage() {
                   <h4 className="text-sm font-semibold text-gray-900 mb-2">Attached ID Documents ({customer.ids.length})</h4>
                   <div className="flex flex-wrap gap-2">
                     {customer.ids.map((doc: any) => (
-                      <a
+                      <button
                         key={doc.id}
-                        href={`/api/customers/${customer.id}/ids/${doc.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        type="button"
+                        onClick={() => setViewingDocUrl(`/api/customers/${customer.id}/ids/${doc.id}`)}
                         className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-blue-300 rounded-md hover:bg-blue-100 transition-colors text-sm"
                       >
                         <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                         <span className="text-gray-700">{doc.documentType.replace(/_/g, ' ')}</span>
-                      </a>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1040,8 +1135,8 @@ export default function NewTransactionPage() {
 
       {/* Create Customer Modal */}
       {showCreateCustomer && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-start justify-center py-8">
+          <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Create New Customer</h3>
               <button
@@ -1090,13 +1185,30 @@ export default function NewTransactionPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Date of Birth <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  required
-                  value={newCustomer.dob}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, dob: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={(newValue) => {
+                      setSelectedDate(newValue);
+                      if (newValue) {
+                        setNewCustomer({ ...newCustomer, dob: newValue.format('YYYY-MM-DD') });
+                      }
+                    }}
+                    format="DD/MM/YYYY"
+                    slotProps={{
+                      textField: {
+                        required: true,
+                        fullWidth: true,
+                        size: 'small',
+                        sx: {
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: 'white',
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </LocalizationProvider>
               </div>
 
               <div>
@@ -1126,22 +1238,146 @@ export default function NewTransactionPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
-                </label>
-                <textarea
-                  value={newCustomer.address}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              {/* Address Details */}
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Address Details (Optional)</h4>
+                <p className="text-xs text-gray-600 mb-4">These fields will be auto-filled for transactions ≥ NZ$1,000</p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Street Address
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomer.streetAddress}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, streetAddress: e.target.value, address: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Suburb
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomer.suburb}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, suburb: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomer.city}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Postcode
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomer.postcode}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, postcode: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Home Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={newCustomer.homePhone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, homePhone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Mobile Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={newCustomer.mobilePhone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, mobilePhone: e.target.value })}
+                      placeholder="Usually same as primary phone"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Employment Details */}
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Employment Details (Optional)</h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Occupation
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomer.occupation}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, occupation: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Employer Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomer.employerName}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, employerName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Employer Address
+                    </label>
+                    <input
+                      type="text"
+                      value={newCustomer.employerAddress}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, employerAddress: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Employer Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={newCustomer.employerPhone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, employerPhone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* ID Document Upload */}
               <div className="border-t border-gray-200 pt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ID Document (Optional)
+                  ID Document <span className="text-red-500">*</span>
                 </label>
 
                 <div className="mb-3">
@@ -1218,6 +1454,10 @@ export default function NewTransactionPage() {
                 <p className="text-xs text-gray-500 mt-2">
                   📱 On mobile: Use "Take Photo" to capture ID with camera
                 </p>
+
+                {idFiles.length === 0 && (
+                  <p className="text-sm text-red-600 mt-2">⚠️ At least one ID document is required</p>
+                )}
               </div>
 
               {error && (
@@ -1252,6 +1492,41 @@ export default function NewTransactionPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {viewingDocUrl && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+          onClick={() => setViewingDocUrl(null)}
+        >
+          <div
+            className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">ID Document</h3>
+              <button
+                onClick={() => setViewingDocUrl(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Image Content */}
+            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)] flex items-center justify-center bg-gray-100">
+              <img
+                src={viewingDocUrl}
+                alt="ID Document"
+                className="max-w-full max-h-full object-contain rounded"
+              />
+            </div>
           </div>
         </div>
       )}

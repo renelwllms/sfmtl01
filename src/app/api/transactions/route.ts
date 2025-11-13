@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { TransactionSchema } from '@/lib/validators';
 import { nextTxnNumber } from '@/lib/ids';
 import { logTransactionActivity, getRequestInfo } from '@/lib/activity-log';
+import { sendEmail, generateTransactionInProgressEmail } from '@/lib/email';
 
 // GET /api/transactions - List transactions with optional filters
 export async function GET(request: NextRequest) {
@@ -22,6 +23,9 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const currency = searchParams.get('currency') || '';
     const searchTerm = searchParams.get('search') || '';
+    const agentId = searchParams.get('agentId'); // Filter by agent
+    const source = searchParams.get('source'); // 'agent' or 'head-office'
+    const statusId = searchParams.get('statusId'); // Filter by status
 
     const skip = (page - 1) * limit;
 
@@ -37,6 +41,20 @@ export async function GET(request: NextRequest) {
 
     if (currency) {
       andConditions.push({ currency: currency });
+    }
+
+    // Filter by agent or head office
+    if (agentId) {
+      andConditions.push({ agentId: agentId });
+    } else if (source === 'head-office') {
+      andConditions.push({ agentId: null });
+    } else if (source === 'agent') {
+      andConditions.push({ agentId: { not: null } });
+    }
+
+    // Filter by status
+    if (statusId) {
+      andConditions.push({ statusId: statusId });
     }
 
     if (searchTerm) {
@@ -90,6 +108,22 @@ export async function GET(request: NextRequest) {
           createdBy: {
             select: {
               email: true
+            }
+          },
+          agent: {
+            select: {
+              id: true,
+              name: true,
+              agentCode: true,
+              isHeadOffice: true
+            }
+          },
+          status: {
+            select: {
+              id: true,
+              name: true,
+              label: true,
+              color: true
             }
           }
         }
@@ -161,6 +195,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Extract agentId from request body if provided (for agent portal transactions)
+    const agentId = body.agentId || null;
+
     // Generate transaction number
     const txnNumber = await nextTxnNumber();
 
@@ -226,13 +263,23 @@ export async function POST(request: NextRequest) {
         // AML Tracking
         isPtrRequired,
         isGoAmlExportReady,
-        createdById: validUserId
+        createdById: validUserId,
+        agentId: agentId // Track which agent created this transaction
       },
       include: {
         customer: {
           select: {
             customerId: true,
-            fullName: true
+            fullName: true,
+            email: true,
+            phone: true
+          }
+        },
+        agent: {
+          select: {
+            id: true,
+            name: true,
+            agentCode: true
           }
         }
       }
@@ -246,17 +293,35 @@ export async function POST(request: NextRequest) {
       transaction.txnNumber,
       validUserId || undefined,
       (session.user as any).email,
-      `Transaction ${transaction.txnNumber} created for customer ${customer.fullName} - ${data.currency} ${data.totalForeignReceived.toFixed(2)}`,
+      `Transaction ${transaction.txnNumber} created for customer ${customer.fullName} - ${data.currency} ${data.totalForeignReceived.toFixed(2)}${agentId ? ` via agent ${transaction.agent?.name}` : ''}`,
       {
         customerId: customer.customerId,
         customerName: customer.fullName,
         amount: data.amountNzdCents / 100,
         currency: data.currency,
         beneficiaryName: data.beneficiaryName,
+        agentId: agentId,
+        agentName: transaction.agent?.name,
         ipAddress,
         userAgent
       }
     );
+
+    // Send email notification to customer if email is provided
+    if (transaction.customer.email) {
+      try {
+        const emailHtml = generateTransactionInProgressEmail(transaction);
+        await sendEmail({
+          to: transaction.customer.email,
+          subject: `Transaction ${transaction.txnNumber} - In Progress`,
+          html: emailHtml
+        });
+        console.log(`Email notification sent to ${transaction.customer.email} for transaction ${transaction.txnNumber}`);
+      } catch (emailError) {
+        // Log email error but don't fail the transaction
+        console.error('Failed to send transaction email:', emailError);
+      }
+    }
 
     return NextResponse.json({ transaction }, { status: 201 });
   } catch (error) {

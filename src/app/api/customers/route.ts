@@ -159,7 +159,18 @@ export async function POST(request: NextRequest) {
         dob: data.dob,
         phone: data.phone,
         email: data.email || null,
-        address: data.address || null
+        address: data.address || null,
+        // Enhanced AML fields
+        streetAddress: data.streetAddress || null,
+        suburb: data.suburb || null,
+        city: data.city || null,
+        postcode: data.postcode || null,
+        homePhone: data.homePhone || null,
+        mobilePhone: data.mobilePhone || null,
+        occupation: data.occupation || null,
+        employerName: data.employerName || null,
+        employerAddress: data.employerAddress || null,
+        employerPhone: data.employerPhone || null
       }
     });
 

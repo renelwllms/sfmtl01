@@ -6,6 +6,7 @@ import Navigation from '@/components/Navigation';
 import { useUI } from '@/contexts/UIContext';
 import { QRCodeSVG } from 'qrcode.react';
 import AgentsTab from '@/components/AgentsTab';
+import TransactionStatusTab from '@/components/TransactionStatusTab';
 
 interface ActivityLog {
   id: string;
@@ -40,7 +41,7 @@ interface DocumentType {
 export default function SettingsPage() {
   const { data: session, status } = useSession();
   const { settings: uiSettings, updateSettings } = useUI();
-  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email' | 'agents' | 'database'>('rates');
+  const [activeTab, setActiveTab] = useState<'rates' | 'users' | 'ui' | 'logs' | 'doctypes' | 'email' | 'agents' | 'database' | 'transaction-status'>('rates');
 
   // Exchange Rates State
   const [rateDate, setRateDate] = useState('');
@@ -735,6 +736,16 @@ export default function SettingsPage() {
                 }`}
               >
                 Agents & QR Codes
+              </button>
+              <button
+                onClick={() => setActiveTab('transaction-status')}
+                className={`px-3 py-3 text-xs font-medium whitespace-nowrap ${
+                  activeTab === 'transaction-status'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Transaction Statuses
               </button>
               <button
                 onClick={() => setActiveTab('database')}
@@ -1535,6 +1546,11 @@ export default function SettingsPage() {
                 handleCreateAgent={handleCreateAgent}
                 handleUpdateAgentStatus={handleUpdateAgentStatus}
               />
+            )}
+
+            {/* Transaction Statuses Tab */}
+            {activeTab === 'transaction-status' && (
+              <TransactionStatusTab />
             )}
 
             {/* Database Settings Tab */}

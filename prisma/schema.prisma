@@ -71,6 +71,18 @@ model Customer {
   phone        String           @unique // E.164
   email        String?
   address      String?
+  // Enhanced AML fields (optional, for >= NZ$1,000 transactions)
+  streetAddress String?
+  suburb        String?
+  city          String?
+  postcode      String?
+  homePhone     String?
+  mobilePhone   String? // Usually same as phone
+  occupation    String?
+  employerName  String?
+  employerAddress String?
+  employerPhone String?
+  // Relations
   agent        Agent?           @relation("CustomerAgent", fields: [agentId], references: [id])
   agentId      String?          // Which agent registered this customer
   createdAt    DateTime         @default(now())
@@ -156,13 +168,18 @@ model Transaction {
   agentId                String?         // Which agent processed this transaction
   createdBy              User?           @relation("TransactionCreatedBy", fields: [createdById], references: [id])
   createdById            String?
+  // Transaction Status
+  status                 TransactionStatus? @relation("TransactionStatus", fields: [statusId], references: [id])
+  statusId               String?         // Current status of transaction
   createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @default(now()) @updatedAt
 
   @@index([customerId, date])
   @@index([date, currency])
   @@index([isPtrRequired])
   @@index([isGoAmlExportReady])
   @@index([agentId, date])
+  @@index([statusId])
 }
 
 model ExchangeRate {
@@ -263,7 +280,54 @@ model Agent {
   createdById   String?
   transactions  Transaction[] @relation("TransactionAgent")
   customers     Customer[]    @relation("CustomerAgent")
+  eodRecords    EodReconciliation[]
 
   @@index([agentCode])
   @@index([status])
+}
+
+model TransactionStatus {
+  id           String        @id @default(cuid())
+  name         String        @unique // e.g. OPEN, CLOSE, IN_PROGRESS
+  label        String        // Display name
+  color        String?       // Hex color for UI (e.g. #10b981)
+  isDefault    Boolean       @default(false)
+  isActive     Boolean       @default(true)
+  order        Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[] @relation("TransactionStatus")
+
+  @@index([isActive, order])
+}
+
+enum EodStatus {
+  PENDING
+  COMPLETED
+  DISCREPANCY
+}
+
+model EodReconciliation {
+  id                    String     @id @default(cuid())
+  date                  DateTime   // Date of the reconciliation (end of day)
+  agent                 Agent?     @relation(fields: [agentId], references: [id])
+  agentId               String?    // Null for head office
+  // System calculated amounts (in cents)
+  systemTotalCents      Int        // Total from all transactions in system
+  systemTransactionCount Int       // Number of transactions in system
+  // Physically counted amounts (in cents)
+  cashReceivedCents     Int        // Physical cash counted
+  // Reconciliation
+  differenceCents       Int        // Difference between system and physical
+  status                EodStatus  @default(PENDING)
+  notes                 String?    // Notes about discrepancies or issues
+  completedBy           String?    // User ID who completed the EOD
+  completedByEmail      String?    // User email who completed the EOD
+  completedAt           DateTime?  // When the EOD was marked as completed
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  @@unique([date, agentId]) // One EOD per agent per day
+  @@index([date, status])
+  @@index([agentId, date])
 }

@@ -20,7 +20,18 @@ export const CustomerSchema = z.object({
   dob: dob18,
   phone: e164,
   email: z.string().email().optional().or(z.literal('')),
-  address: z.string().optional()
+  address: z.string().optional(),
+  // Enhanced AML fields (optional, for >= NZ$1,000 transactions)
+  streetAddress: z.string().optional(),
+  suburb: z.string().optional(),
+  city: z.string().optional(),
+  postcode: z.string().optional(),
+  homePhone: z.string().optional(),
+  mobilePhone: z.string().optional(),
+  occupation: z.string().optional(),
+  employerName: z.string().optional(),
+  employerAddress: z.string().optional(),
+  employerPhone: z.string().optional()
 });
 
 export const TransactionSchema = z.object({

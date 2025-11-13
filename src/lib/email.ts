@@ -100,6 +100,170 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 }
 
 /**
+ * Generate HTML template for transaction in progress notification
+ */
+export function generateTransactionInProgressEmail(transaction: any): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .transaction-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+    .detail-label { font-weight: bold; color: #6b7280; }
+    .detail-value { color: #111827; }
+    .footer { background: #1f2937; color: #9ca3af; padding: 20px; text-align: center; font-size: 12px; border-radius: 0 0 8px 8px; }
+    .status-badge { display: inline-block; padding: 8px 16px; background: #fef3c7; color: #92400e; border-radius: 9999px; font-weight: bold; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Transaction Received</h1>
+      <p>SFMTL - Samoa Finance Money Transfer</p>
+    </div>
+    <div class="content">
+      <p>Dear ${transaction.customer?.fullName || transaction.senderName},</p>
+      <p>Your money transfer transaction has been received and is currently being processed.</p>
+
+      <div style="text-align: center;">
+        <span class="status-badge">⏳ IN PROGRESS</span>
+      </div>
+
+      <div class="transaction-details">
+        <div class="detail-row">
+          <span class="detail-label">Transaction Number:</span>
+          <span class="detail-value">${transaction.txnNumber}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Date:</span>
+          <span class="detail-value">${new Date(transaction.date || transaction.createdAt).toLocaleString('en-NZ')}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Beneficiary:</span>
+          <span class="detail-value">${transaction.beneficiaryName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Amount Paid (NZD):</span>
+          <span class="detail-value">$${(transaction.totalPaidNzdCents / 100).toFixed(2)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Currency:</span>
+          <span class="detail-value">${transaction.currency}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Amount to Receive:</span>
+          <span class="detail-value">${transaction.currency} ${transaction.totalForeignReceived.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <p><strong>What happens next?</strong></p>
+      <ul>
+        <li>Our team is processing your transaction</li>
+        <li>You will receive another email once the transfer is completed</li>
+        <li>Please keep your transaction number for reference</li>
+      </ul>
+
+      <p>If you have any questions about this transaction, please contact us with your transaction number.</p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message from SFMTL.</p>
+      <p>© ${new Date().getFullYear()} SFMTL - Samoa Finance Money Transfer Ltd. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
+ * Generate HTML template for transaction completed notification
+ */
+export function generateTransactionCompletedEmail(transaction: any): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .transaction-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+    .detail-label { font-weight: bold; color: #6b7280; }
+    .detail-value { color: #111827; }
+    .footer { background: #1f2937; color: #9ca3af; padding: 20px; text-align: center; font-size: 12px; border-radius: 0 0 8px 8px; }
+    .status-badge { display: inline-block; padding: 8px 16px; background: #d1fae5; color: #065f46; border-radius: 9999px; font-weight: bold; margin: 20px 0; }
+    .amount-highlight { font-size: 24px; font-weight: bold; color: #059669; text-align: center; padding: 20px; background: #ecfdf5; border-radius: 8px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✓ Transaction Completed</h1>
+      <p>SFMTL - Samoa Finance Money Transfer</p>
+    </div>
+    <div class="content">
+      <p>Dear ${transaction.customer?.fullName || transaction.senderName},</p>
+      <p>Great news! Your money transfer has been successfully completed.</p>
+
+      <div style="text-align: center;">
+        <span class="status-badge">✓ COMPLETED</span>
+      </div>
+
+      <div class="transaction-details">
+        <div class="detail-row">
+          <span class="detail-label">Transaction Number:</span>
+          <span class="detail-value">${transaction.txnNumber}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Completed Date:</span>
+          <span class="detail-value">${new Date().toLocaleString('en-NZ')}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Beneficiary:</span>
+          <span class="detail-value">${transaction.beneficiaryName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Currency:</span>
+          <span class="detail-value">${transaction.currency}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Exchange Rate:</span>
+          <span class="detail-value">${transaction.rate.toFixed(4)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Amount Paid (NZD):</span>
+          <span class="detail-value">$${(transaction.totalPaidNzdCents / 100).toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div class="amount-highlight">
+        ${transaction.currency} ${transaction.totalForeignReceived.toFixed(2)}
+        <div style="font-size: 14px; color: #6b7280; font-weight: normal; margin-top: 5px;">Successfully transferred</div>
+      </div>
+
+      <p><strong>Your beneficiary can now collect the funds.</strong></p>
+      <p>Thank you for choosing SFMTL for your money transfer needs.</p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message from SFMTL.</p>
+      <p>© ${new Date().getFullYear()} SFMTL - Samoa Finance Money Transfer Ltd. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+/**
  * Generate HTML template for transaction receipt
  */
 export function generateTransactionReceiptEmail(transaction: any): string {

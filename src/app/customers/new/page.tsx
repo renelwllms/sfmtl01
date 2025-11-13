@@ -26,7 +26,18 @@ export default function NewCustomerPage() {
     dob: '',
     phone: '',
     email: '',
-    address: ''
+    address: '',
+    // Enhanced AML fields
+    streetAddress: '',
+    suburb: '',
+    city: '',
+    postcode: '',
+    homePhone: '',
+    mobilePhone: '',
+    occupation: '',
+    employerName: '',
+    employerAddress: '',
+    employerPhone: ''
   });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [idFiles, setIdFiles] = useState<Array<{ file: File; documentType: string }>>([]);
@@ -57,6 +68,13 @@ export default function NewCustomerPage() {
     e.preventDefault();
     setError('');
     setValidationErrors([]);
+
+    // Validate that at least one ID document is uploaded
+    if (idFiles.length === 0) {
+      setError('Please upload at least one ID document');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -256,11 +274,11 @@ export default function NewCustomerPage() {
 
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                  Address
+                  Address (General)
                 </label>
                 <textarea
                   id="address"
-                  rows={3}
+                  rows={2}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -269,9 +287,174 @@ export default function NewCustomerPage() {
               </div>
             </div>
 
+            {/* Enhanced AML Information */}
+            <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Enhanced AML Information (Optional)</h2>
+                <p className="text-sm text-gray-600 mt-1">These details will auto-populate for transactions ≥ NZ$1,000</p>
+              </div>
+
+              {/* Address Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label htmlFor="streetAddress" className="block text-sm font-medium text-gray-700">
+                    Street Address
+                  </label>
+                  <input
+                    id="streetAddress"
+                    type="text"
+                    value={formData.streetAddress}
+                    onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value, address: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="suburb" className="block text-sm font-medium text-gray-700">
+                    Suburb
+                  </label>
+                  <input
+                    id="suburb"
+                    type="text"
+                    value={formData.suburb}
+                    onChange={(e) => setFormData({ ...formData, suburb: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                    City
+                  </label>
+                  <input
+                    id="city"
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="postcode" className="block text-sm font-medium text-gray-700">
+                    Postcode
+                  </label>
+                  <input
+                    id="postcode"
+                    type="text"
+                    value={formData.postcode}
+                    onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="homePhone" className="block text-sm font-medium text-gray-700">
+                    Home Phone
+                  </label>
+                  <input
+                    id="homePhone"
+                    type="tel"
+                    value={formData.homePhone}
+                    onChange={(e) => setFormData({ ...formData, homePhone: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="mobilePhone" className="block text-sm font-medium text-gray-700">
+                    Mobile Phone
+                  </label>
+                  <input
+                    id="mobilePhone"
+                    type="tel"
+                    value={formData.mobilePhone}
+                    onChange={(e) => setFormData({ ...formData, mobilePhone: e.target.value })}
+                    placeholder="Usually same as primary phone"
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {/* Employment Details */}
+              <div className="border-t border-blue-300 pt-4">
+                <h3 className="text-md font-semibold text-gray-900 mb-3">Employment Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="occupation" className="block text-sm font-medium text-gray-700">
+                      Occupation
+                    </label>
+                    <input
+                      id="occupation"
+                      type="text"
+                      value={formData.occupation}
+                      onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="employerName" className="block text-sm font-medium text-gray-700">
+                      Employer Name
+                    </label>
+                    <input
+                      id="employerName"
+                      type="text"
+                      value={formData.employerName}
+                      onChange={(e) => setFormData({ ...formData, employerName: e.target.value })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <label htmlFor="employerAddress" className="block text-sm font-medium text-gray-700">
+                      Employer Address
+                    </label>
+                    <input
+                      id="employerAddress"
+                      type="text"
+                      value={formData.employerAddress}
+                      onChange={(e) => setFormData({ ...formData, employerAddress: e.target.value })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="employerPhone" className="block text-sm font-medium text-gray-700">
+                      Employer Phone
+                    </label>
+                    <input
+                      id="employerPhone"
+                      type="tel"
+                      value={formData.employerPhone}
+                      onChange={(e) => setFormData({ ...formData, employerPhone: e.target.value })}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* ID Document Upload */}
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">ID Documents</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  ID Documents <span className="text-red-500">*</span>
+                </h2>
+                {idFiles.length === 0 && (
+                  <span className="text-sm text-red-600 font-medium">⚠ At least one ID document required</span>
+                )}
+              </div>
               <p className="text-sm text-gray-600">Select document type and upload the corresponding file</p>
 
               {/* Document Type Selection and File Upload */}
