@@ -24,7 +24,7 @@ NC='\033[0m' # No Color
 INSTALL_DIR="/sfmtl"
 SERVICE_NAME="samoa-finance"
 APP_PORT=3000
-NODE_VERSION="20"  # LTS version
+NODE_VERSION="22"  # LTS version (matches development environment)
 
 echo -e "${BLUE}============================================${NC}"
 echo -e "${BLUE}SAMOA FINANCE APP - Ubuntu Installation${NC}"
