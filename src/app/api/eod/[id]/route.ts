@@ -7,7 +7,7 @@ import { logActivity } from '@/lib/activity-logger';
 // GET /api/eod/[id] - Get a specific EOD record
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const eodRecord = await db.eodReconciliation.findUnique({
       where: { id },
@@ -52,7 +52,7 @@ export async function GET(
 // PATCH /api/eod/[id] - Update EOD record (cash received, notes, status)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -64,7 +64,7 @@ export async function PATCH(
       where: { email: session.user.email! }
     });
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { cashReceivedCents, notes, status } = body;
 
@@ -173,7 +173,7 @@ export async function PATCH(
 // DELETE /api/eod/[id] - Delete an EOD record (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -190,7 +190,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if EOD record exists
     const eodRecord = await db.eodReconciliation.findUnique({
