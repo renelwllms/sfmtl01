@@ -9,6 +9,182 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
 
+// Simple inline upload component for Source of Funds
+function SourceOfFundsUpload({ transactionId }: { transactionId: string }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleUpload = async () => {
+    if (!file) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', 'SOURCE_OF_FUNDS');
+      formData.append('description', 'Source of Funds Document');
+
+      const response = await fetch(`/api/public/transactions/${transactionId}/documents`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || 'Upload failed');
+        setUploading(false);
+        return;
+      }
+
+      setUploaded(true);
+      setFile(null);
+    } catch (err) {
+      setError('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (uploaded) {
+    return (
+      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-green-800">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span className="font-semibold">Source of Funds document uploaded successfully</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-2 border-gray-200 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 mb-3">📄 Source of Funds Document (Optional)</h4>
+      <input
+        type="file"
+        accept="image/*,application/pdf,.doc,.docx"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+            setError('');
+          }
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+        disabled={uploading}
+      />
+      {file && (
+        <p className="text-sm text-gray-600 mb-3">Selected: {file.name}</p>
+      )}
+      {error && (
+        <p className="text-sm text-red-600 mb-3">{error}</p>
+      )}
+      <button
+        onClick={handleUpload}
+        disabled={!file || uploading}
+        className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+      >
+        {uploading ? 'Uploading...' : 'Upload Source of Funds'}
+      </button>
+      <p className="text-xs text-gray-500 mt-2">
+        Accepted: Bank statement, payslip, sale agreement, etc. (PDF, JPG, PNG, Word)
+      </p>
+    </div>
+  );
+}
+
+// Simple inline upload component for Proof of Address
+function ProofOfAddressUpload({ transactionId }: { transactionId: string }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleUpload = async () => {
+    if (!file) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', 'PROOF_OF_ADDRESS');
+      formData.append('description', 'Proof of Address Document');
+
+      const response = await fetch(`/api/public/transactions/${transactionId}/documents`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || 'Upload failed');
+        setUploading(false);
+        return;
+      }
+
+      setUploaded(true);
+      setFile(null);
+    } catch (err) {
+      setError('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (uploaded) {
+    return (
+      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-green-800">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span className="font-semibold">Proof of Address document uploaded successfully</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-2 border-gray-200 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 mb-3">🏠 Proof of Address Document (Optional)</h4>
+      <input
+        type="file"
+        accept="image/*,application/pdf,.doc,.docx"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+            setError('');
+          }
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+        disabled={uploading}
+      />
+      {file && (
+        <p className="text-sm text-gray-600 mb-3">Selected: {file.name}</p>
+      )}
+      {error && (
+        <p className="text-sm text-red-600 mb-3">{error}</p>
+      )}
+      <button
+        onClick={handleUpload}
+        disabled={!file || uploading}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+      >
+        {uploading ? 'Uploading...' : 'Upload Proof of Address'}
+      </button>
+      <p className="text-xs text-gray-500 mt-2">
+        Accepted: Utility bill, bank statement, IRD letter, council rates, etc. (PDF, JPG, PNG, Word)
+      </p>
+    </div>
+  );
+}
+
 interface Agent {
   id: string;
   agentCode: string;
@@ -34,7 +210,10 @@ export default function AgentCreateTransactionPage({ params }: { params: Promise
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [success, setSuccess] = useState(false);
   const [transactionNumber, setTransactionNumber] = useState('');
+  const [transactionId, setTransactionId] = useState('');
   const [selectedProofDocs, setSelectedProofDocs] = useState<string[]>([]);
+  const [sourceOfFundsFile, setSourceOfFundsFile] = useState<File | null>(null);
+  const [proofOfAddressFile, setProofOfAddressFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     // Beneficiary
@@ -89,20 +268,30 @@ export default function AgentCreateTransactionPage({ params }: { params: Promise
   }, [formData.currency, rates]);
 
   useEffect(() => {
-    if (feeSettings && feeSettings.feeType === 'PERCENTAGE' && formData.amountNzd) {
+    // Calculate fee using the fee calculate API
+    if (formData.amountNzd) {
       const amount = parseFloat(formData.amountNzd);
       if (!isNaN(amount) && amount > 0) {
-        let calculatedFee = amount * (feeSettings.feePercentage / 100);
-        if (calculatedFee < feeSettings.minimumFeeNzd) {
-          calculatedFee = feeSettings.minimumFeeNzd;
-        }
-        if (feeSettings.maximumFeeNzd && calculatedFee > feeSettings.maximumFeeNzd) {
-          calculatedFee = feeSettings.maximumFeeNzd;
-        }
-        setFormData(prev => ({ ...prev, feeNzd: calculatedFee.toFixed(2) }));
+        calculateFee(amount);
       }
     }
-  }, [formData.amountNzd, feeSettings]);
+  }, [formData.amountNzd]);
+
+  async function calculateFee(amountNzd: number) {
+    try {
+      const response = await fetch('/api/public/fees/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountNzd })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFormData(prev => ({ ...prev, feeNzd: data.feeNzd.toFixed(2) }));
+      }
+    } catch (error) {
+      console.error('Failed to calculate fee:', error);
+    }
+  }
 
   // Scroll to error section when errors appear
   useEffect(() => {
@@ -352,8 +541,45 @@ export default function AgentCreateTransactionPage({ params }: { params: Promise
         return;
       }
 
+      // Upload documents if provided
+      const uploadPromises = [];
+
+      if (sourceOfFundsFile) {
+        const formData = new FormData();
+        formData.append('file', sourceOfFundsFile);
+        formData.append('documentType', 'SOURCE_OF_FUNDS');
+        formData.append('description', 'Source of Funds Document');
+
+        uploadPromises.push(
+          fetch(`/api/public/transactions/${data.transaction.id}/documents`, {
+            method: 'POST',
+            body: formData
+          })
+        );
+      }
+
+      if (proofOfAddressFile) {
+        const formData = new FormData();
+        formData.append('file', proofOfAddressFile);
+        formData.append('documentType', 'PROOF_OF_ADDRESS');
+        formData.append('description', 'Proof of Address Document');
+
+        uploadPromises.push(
+          fetch(`/api/public/transactions/${data.transaction.id}/documents`, {
+            method: 'POST',
+            body: formData
+          })
+        );
+      }
+
+      // Wait for all uploads to complete
+      if (uploadPromises.length > 0) {
+        await Promise.all(uploadPromises);
+      }
+
       setSuccess(true);
       setTransactionNumber(data.transaction.txnNumber);
+      setTransactionId(data.transaction.id);
     } catch (err) {
       console.error('Transaction submission error:', err);
       setError('An error occurred. Please try again.');
@@ -363,24 +589,55 @@ export default function AgentCreateTransactionPage({ params }: { params: Promise
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-xl p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50 p-4">
+        <div className="max-w-2xl mx-auto py-8">
+          <div className="bg-white rounded-xl shadow-xl p-8">
+            {/* Success Header */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Transaction Successful!</h1>
+              <p className="text-gray-600 mb-4">Transaction number:</p>
+              <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                <p className="text-2xl font-bold text-blue-600">{transactionNumber}</p>
+              </div>
+            </div>
+
+            {/* Optional Document Uploads */}
+            <div className="space-y-6 mb-8">
+              <div className="border-t border-gray-200 pt-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Optional Supporting Documents</h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  You can upload supporting documents now, or skip and return to the portal.
+                </p>
+              </div>
+
+              {/* Source of Funds Upload */}
+              <SourceOfFundsUpload transactionId={transactionId} />
+
+              {/* Proof of Address Upload */}
+              <ProofOfAddressUpload transactionId={transactionId} />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push(`/portal/${agentCode}`)}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Skip & Return to Portal
+              </button>
+              <button
+                onClick={() => router.push(`/portal/${agentCode}/transaction/new`)}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Create Another Transaction
+              </button>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Transaction Successful!</h1>
-          <p className="text-gray-600 mb-4">Transaction number:</p>
-          <div className="bg-blue-50 p-4 rounded-lg mb-6">
-            <p className="text-2xl font-bold text-blue-600">{transactionNumber}</p>
-          </div>
-          <button
-            onClick={() => router.push(`/portal/${agentCode}`)}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Portal
-          </button>
         </div>
       </div>
     );
@@ -732,9 +989,9 @@ export default function AgentCreateTransactionPage({ params }: { params: Promise
                   />
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Source of Funds
+                    Source of Funds <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.sourceOfFunds}
@@ -752,11 +1009,75 @@ export default function AgentCreateTransactionPage({ params }: { params: Promise
                     <option value="FUNDRAISING_RAFFLE">Fundraising/Raffle</option>
                     <option value="OTHER">Other</option>
                   </select>
+
+                  {/* Mobile-friendly upload section */}
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">📄 Upload Document (Optional)</span>
+                      {sourceOfFundsFile && (
+                        <button
+                          type="button"
+                          onClick={() => setSourceOfFundsFile(null)}
+                          className="text-xs text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    {sourceOfFundsFile ? (
+                      <div className="p-2 bg-green-50 border border-green-300 rounded">
+                        <p className="text-sm text-green-700 font-medium">✓ {sourceOfFundsFile.name}</p>
+                        <p className="text-xs text-green-600">{(sourceOfFundsFile.size / 1024).toFixed(1)} KB</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex flex-col items-center justify-center px-3 py-3 bg-white border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
+                          <svg className="w-6 h-6 text-blue-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="text-xs font-medium text-blue-600">Take Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setSourceOfFundsFile(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                            disabled={loading}
+                          />
+                        </label>
+
+                        <label className="flex flex-col items-center justify-center px-3 py-3 bg-white border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <svg className="w-6 h-6 text-gray-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span className="text-xs font-medium text-gray-600">Choose File</span>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf,.doc,.docx"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setSourceOfFundsFile(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                            disabled={loading}
+                          />
+                        </label>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">PDF, Images, Word, Excel</p>
+                  </div>
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Proof of Address
+                    Proof of Address Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.proofOfAddressType}
@@ -774,6 +1095,70 @@ export default function AgentCreateTransactionPage({ params }: { params: Promise
                     <option value="BILL">Utility Bill</option>
                     <option value="OTHER">Other</option>
                   </select>
+
+                  {/* Mobile-friendly upload section */}
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">🏠 Upload Document (Optional)</span>
+                      {proofOfAddressFile && (
+                        <button
+                          type="button"
+                          onClick={() => setProofOfAddressFile(null)}
+                          className="text-xs text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    {proofOfAddressFile ? (
+                      <div className="p-2 bg-green-100 border border-green-400 rounded">
+                        <p className="text-sm text-green-700 font-medium">✓ {proofOfAddressFile.name}</p>
+                        <p className="text-xs text-green-600">{(proofOfAddressFile.size / 1024).toFixed(1)} KB</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex flex-col items-center justify-center px-3 py-3 bg-white border-2 border-dashed border-green-300 rounded-lg cursor-pointer hover:bg-green-50 transition-colors">
+                          <svg className="w-6 h-6 text-green-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span className="text-xs font-medium text-green-600">Take Photo</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setProofOfAddressFile(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                            disabled={loading}
+                          />
+                        </label>
+
+                        <label className="flex flex-col items-center justify-center px-3 py-3 bg-white border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <svg className="w-6 h-6 text-gray-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span className="text-xs font-medium text-gray-600">Choose File</span>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf,.doc,.docx"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setProofOfAddressFile(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                            disabled={loading}
+                          />
+                        </label>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">PDF, Images, Word, Excel</p>
+                  </div>
                 </div>
               </div>
 

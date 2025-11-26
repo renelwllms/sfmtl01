@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { hasRole } from '@/lib/roles';
 import { formatNZDate } from '@/lib/date-utils';
@@ -373,11 +374,15 @@ export default function AMLPage() {
                           </td>
                         )}
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-blue-600">{txn.txnNumber}</div>
+                          <Link href={`/transactions/${txn.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                            {txn.txnNumber}
+                          </Link>
                           <div className="text-xs text-gray-500">{txn.customer.customerId}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">{txn.customer.fullName}</div>
+                          <Link href={`/customers/${txn.customer.id}`} className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                            {txn.customer.fullName}
+                          </Link>
                           <div className="text-xs text-gray-500">{txn.customer.phone}</div>
                           <div className="text-xs text-gray-500">DOB: {formatNZDate(txn.customer.dob)}</div>
                         </td>

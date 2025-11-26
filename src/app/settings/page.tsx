@@ -7,6 +7,7 @@ import { useUI } from '@/contexts/UIContext';
 import { QRCodeSVG } from 'qrcode.react';
 import AgentsTab from '@/components/AgentsTab';
 import TransactionStatusTab from '@/components/TransactionStatusTab';
+import FeeBracketsManager from '@/components/FeeBracketsManager';
 
 interface ActivityLog {
   id: string;
@@ -1137,9 +1138,10 @@ export default function SettingsPage() {
                       >
                         <option value="FIXED">Fixed Amount (NZD)</option>
                         <option value="PERCENTAGE">Percentage of Transaction</option>
+                        <option value="BRACKET">Bracket-Based Fees</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
-                        Choose whether to charge a fixed fee or a percentage
+                        Choose the fee calculation method
                       </p>
                     </div>
 
@@ -1246,6 +1248,13 @@ export default function SettingsPage() {
                           </div>
                         )}
                       </>
+                    )}
+
+                    {/* Bracket-Based Fees */}
+                    {feeSettings.feeType === 'BRACKET' && (
+                      <div>
+                        <FeeBracketsManager />
+                      </div>
                     )}
 
                     {feeSettingsMessage && (

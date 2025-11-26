@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { formatNZDateTime } from '@/lib/date-utils';
 
@@ -356,15 +357,19 @@ export default function AllTransactionsPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {transactions.map((txn) => (
-                      <tr key={txn.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/customers/${txn.customer.id}`)}>
+                      <tr key={txn.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/transactions/${txn.id}`)}>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                           {formatNZDateTime(txn.createdAt)}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-blue-600">
-                          {txn.txnNumber}
+                        <td className="px-3 py-3 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                          <Link href={`/transactions/${txn.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                            {txn.txnNumber}
+                          </Link>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{txn.customer.fullName}</div>
+                        <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <Link href={`/customers/${txn.customer.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                            <div className="text-sm font-medium">{txn.customer.fullName}</div>
+                          </Link>
                           <div className="text-xs text-gray-500">{txn.customer.customerId}</div>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">

@@ -3,6 +3,7 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatNZDate, formatNZDateTime } from '@/lib/date-utils';
@@ -278,11 +279,15 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Top 5 Customers (YTD)</h2>
               <div className="space-y-3">
                 {dashboardData.topCustomers.map((customer: any, index: number) => (
-                  <div key={customer.customerId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Link
+                    key={customer.customerId}
+                    href={`/customers/${customer.id}`}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
                     <div className="flex items-center gap-3">
                       <span className="text-2xl font-bold text-blue-600">#{index + 1}</span>
                       <div>
-                        <p className="font-medium text-gray-900">{customer.name}</p>
+                        <p className="font-medium text-blue-600 hover:text-blue-800">{customer.name}</p>
                         <p className="text-xs text-gray-500">{customer.customerId}</p>
                       </div>
                     </div>
@@ -290,7 +295,7 @@ export default function Dashboard() {
                       <p className="font-semibold text-gray-900">${(customer.totalAmount / 100).toLocaleString('en-NZ')}</p>
                       <p className="text-xs text-gray-500">{customer.transactionCount} txns</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

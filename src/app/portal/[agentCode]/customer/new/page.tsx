@@ -42,7 +42,6 @@ export default function AgentNewCustomerPage({ params }: { params: Promise<{ age
     firstName: '',
     lastName: '',
     dob: '',
-    phone: '',
     email: '',
     address: '',
     streetAddress: '',
@@ -268,22 +267,6 @@ export default function AgentNewCustomerPage({ params }: { params: Promise<{ age
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number <span className="text-red-500">*</span>
-                  <span className="text-xs text-gray-500 ml-2">(E.164 format)</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="+6421234567"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                  disabled={loading}
-                />
-              </div>
-
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
@@ -299,10 +282,40 @@ export default function AgentNewCustomerPage({ params }: { params: Promise<{ age
             </div>
           </div>
 
-          {/* Enhanced Address Details (AML Compliant) */}
+          {/* Phone & Address Details (AML Compliant) */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Address Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Phone & Address Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Home Phone
+                </label>
+                <input
+                  type="tel"
+                  value={formData.homePhone}
+                  onChange={(e) => setFormData({ ...formData, homePhone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                  disabled={loading}
+                  placeholder="+6495551234"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mobile Phone <span className="text-red-500">*</span>
+                  <span className="text-xs text-gray-500 ml-2">(E.164 format)</span>
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={formData.mobilePhone}
+                  onChange={(e) => setFormData({ ...formData, mobilePhone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
+                  disabled={loading}
+                  placeholder="+6421234567"
+                />
+              </div>
+
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Street Address
@@ -356,34 +369,6 @@ export default function AgentNewCustomerPage({ params }: { params: Promise<{ age
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
                   disabled={loading}
                   placeholder="1024"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Home Phone
-                </label>
-                <input
-                  type="tel"
-                  value={formData.homePhone}
-                  onChange={(e) => setFormData({ ...formData, homePhone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                  disabled={loading}
-                  placeholder="+6495551234"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mobile Phone
-                </label>
-                <input
-                  type="tel"
-                  value={formData.mobilePhone}
-                  onChange={(e) => setFormData({ ...formData, mobilePhone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
-                  disabled={loading}
-                  placeholder={formData.phone || "+642xxxxxxxx"}
                 />
               </div>
             </div>

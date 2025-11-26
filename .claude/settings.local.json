@@ -58,7 +58,9 @@
       "Bash(dir)",
       "Bash(rd /S /Q \"C:\\temp\\CursorRepo\\SFMTL\\samoa-finance-app\\src\\app\\api\\customers\\[customerId]\" 2)",
       "Bash(dir \"C:\\temp\\CursorRepo\\SFMTL\\samoa-finance-app\\src\\app\\api\\public\\customers\\[id]\\ids\\[fileId]\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(rd /S /Q node_modules.prisma)",
+      "Bash(C:tempCursorRepoSFMTLsamoa-finance-appsrcapptransactions[id]page.tsx)"
     ],
     "deny": [],
     "ask": []

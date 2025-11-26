@@ -201,10 +201,10 @@ export async function POST(request: NextRequest) {
     // Generate transaction number
     const txnNumber = await nextTxnNumber();
 
-    // Determine AML flags for international transactions
+    // Determine AML flags for international transactions (based on transaction amount, NOT including fees)
     const isInternational = data.currency !== 'WST';
-    const isPtrRequired = isInternational && data.totalPaidNzdCents >= 100000; // >= NZD 1,000
-    const isGoAmlExportReady = data.totalPaidNzdCents >= 100000; // All transactions >= NZD 1,000
+    const isPtrRequired = isInternational && data.amountNzdCents >= 100000; // >= NZD 1,000
+    const isGoAmlExportReady = data.amountNzdCents >= 100000; // All transactions >= NZD 1,000
 
     // Create transaction
     const transaction = await db.transaction.create({

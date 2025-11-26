@@ -40,6 +40,88 @@ export async function GET(
   }
 }
 
+// PATCH /api/customers/[id] - Update customer details
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: customerId } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    // Get existing customer
+    const existing = await db.customer.findUnique({
+      where: { id: customerId }
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+    }
+
+    // Calculate new fullName if first/last name changed
+    const fullName = body.firstName && body.lastName
+      ? `${body.firstName} ${body.lastName}`
+      : existing.fullName;
+
+    // Update customer - if mobilePhone changed, update the phone field too
+    const updateData: any = {
+      ...(body.firstName && { firstName: body.firstName }),
+      ...(body.lastName && { lastName: body.lastName }),
+      fullName,
+      ...(body.email !== undefined && { email: body.email || null }),
+      ...(body.address !== undefined && { address: body.address || null }),
+      ...(body.streetAddress !== undefined && { streetAddress: body.streetAddress || null }),
+      ...(body.suburb !== undefined && { suburb: body.suburb || null }),
+      ...(body.city !== undefined && { city: body.city || null }),
+      ...(body.postcode !== undefined && { postcode: body.postcode || null }),
+      ...(body.homePhone !== undefined && { homePhone: body.homePhone || null }),
+      ...(body.mobilePhone !== undefined && {
+        mobilePhone: body.mobilePhone || null,
+        phone: body.mobilePhone || existing.phone // Keep phone field in sync
+      }),
+      ...(body.occupation !== undefined && { occupation: body.occupation || null }),
+      ...(body.employerName !== undefined && { employerName: body.employerName || null }),
+      ...(body.employerAddress !== undefined && { employerAddress: body.employerAddress || null }),
+      ...(body.employerPhone !== undefined && { employerPhone: body.employerPhone || null })
+    };
+
+    const customer = await db.customer.update({
+      where: { id: customerId },
+      data: updateData,
+      include: {
+        ids: true,
+        transactions: {
+          orderBy: { createdAt: 'desc' },
+          take: 10
+        }
+      }
+    });
+
+    // Log activity
+    await logActivity({
+      type: 'CUSTOMER_UPDATED',
+      userId: (session.user as any).id,
+      userEmail: session.user.email || '',
+      description: `Updated customer: ${customer.fullName} (${customer.customerId})`,
+      entityType: 'Customer',
+      entityId: customerId
+    });
+
+    return NextResponse.json({ customer });
+  } catch (error) {
+    console.error('PATCH /api/customers/[id] error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 // DELETE /api/customers/[id] - Delete customer (Admin only)
 export async function DELETE(
   request: NextRequest,

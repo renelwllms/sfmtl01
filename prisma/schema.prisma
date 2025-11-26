@@ -103,6 +103,37 @@ model CustomerIdFile {
   createdAt    DateTime       @default(now())
 }
 
+enum TransactionDocumentType {
+  SOURCE_OF_FUNDS
+  PROOF_OF_ADDRESS
+  OTHER
+}
+
+model TransactionDocument {
+  id             String                  @id @default(cuid())
+  transaction    Transaction             @relation("TransactionDocuments", fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId  String
+  filePath       String
+  mimeType       String
+  documentType   TransactionDocumentType
+  description    String?                 // Optional description of the document
+  createdAt      DateTime                @default(now())
+
+  @@index([transactionId])
+}
+
+model FamilyContribution {
+  id             String      @id @default(cuid())
+  transaction    Transaction @relation("FamilyContributions", fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId  String
+  contributorName String     // Name of the family member who contributed
+  amountNzdCents Int        // Amount contributed in NZD cents
+  relationship   String?     // Relationship to sender (e.g., "Mother", "Brother")
+  createdAt      DateTime    @default(now())
+
+  @@index([transactionId])
+}
+
 model Transaction {
   id                     String          @id @default(cuid())
   txnNumber              String          @unique // e.g. TXN-2025-10-000654
@@ -171,6 +202,10 @@ model Transaction {
   // Transaction Status
   status                 TransactionStatus? @relation("TransactionStatus", fields: [statusId], references: [id])
   statusId               String?         // Current status of transaction
+  // Attached documents
+  documents              TransactionDocument[] @relation("TransactionDocuments")
+  // Family contributions (when sourceOfFunds is FAMILY_CONTRIBUTIONS)
+  familyContributions    FamilyContribution[] @relation("FamilyContributions")
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @default(now()) @updatedAt
 
@@ -281,13 +316,24 @@ model ExchangeRateSettings {
 model FeeSettings {
   id                String   @id @default(cuid())
   defaultFeeNzd     Float    @default(5.0) // Default transaction fee in NZD
-  feeType           String   @default("FIXED") // "FIXED" or "PERCENTAGE"
+  feeType           String   @default("BRACKET") // "FIXED", "PERCENTAGE", or "BRACKET"
   feePercentage     Float    @default(0.0) // If percentage-based, the percentage to charge
   minimumFeeNzd     Float    @default(0.0) // Minimum fee if using percentage
   maximumFeeNzd     Float?   // Maximum fee if using percentage (optional)
   updatedById       String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model FeeBracket {
+  id                String   @id @default(cuid())
+  minAmount         Float    // Minimum amount in NZD (inclusive)
+  maxAmount         Float    // Maximum amount in NZD (inclusive)
+  feeAmount         Float    // Fee for this bracket in NZD
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([minAmount, maxAmount])
 }
 
 model BusinessBrandingSettings {

@@ -162,8 +162,13 @@ export default function CustomerListPage() {
                 {filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer) => (
                     <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                        {customer.customerId}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a
+                          href={`/customers/${customer.id}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                        >
+                          {customer.customerId}
+                        </a>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{customer.fullName}</div>

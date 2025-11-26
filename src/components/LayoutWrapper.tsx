@@ -8,9 +8,9 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const getContentStyles = () => {
     switch (settings.navPosition) {
       case 'left':
-        return 'ml-64';
+        return 'ml-72';
       case 'right':
-        return 'mr-64';
+        return 'mr-72';
       case 'top':
       default:
         return '';

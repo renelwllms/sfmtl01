@@ -3,11 +3,188 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import FamilyContributionsTable from '@/components/FamilyContributionsTable';
 import { useToast } from '@/contexts/ToastContext';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
+
+// Simple inline upload component for Source of Funds
+function SourceOfFundsUpload({ transactionId }: { transactionId: string }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleUpload = async () => {
+    if (!file) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', 'SOURCE_OF_FUNDS');
+      formData.append('description', 'Source of Funds Document');
+
+      const response = await fetch(`/api/transactions/${transactionId}/documents`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || 'Upload failed');
+        setUploading(false);
+        return;
+      }
+
+      setUploaded(true);
+      setFile(null);
+    } catch (err) {
+      setError('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (uploaded) {
+    return (
+      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-green-800">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span className="font-semibold">Source of Funds document uploaded successfully</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-2 border-gray-200 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 mb-3">📄 Source of Funds Document</h4>
+      <input
+        type="file"
+        accept="image/*,application/pdf,.doc,.docx"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+            setError('');
+          }
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+        disabled={uploading}
+      />
+      {file && (
+        <p className="text-sm text-gray-600 mb-3">Selected: {file.name}</p>
+      )}
+      {error && (
+        <p className="text-sm text-red-600 mb-3">{error}</p>
+      )}
+      <button
+        onClick={handleUpload}
+        disabled={!file || uploading}
+        className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+      >
+        {uploading ? 'Uploading...' : 'Upload Source of Funds'}
+      </button>
+      <p className="text-xs text-gray-500 mt-2">
+        Accepted: Bank statement, payslip, sale agreement, etc. (PDF, JPG, PNG, Word)
+      </p>
+    </div>
+  );
+}
+
+// Simple inline upload component for Proof of Address
+function ProofOfAddressUpload({ transactionId }: { transactionId: string }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleUpload = async () => {
+    if (!file) return;
+
+    setUploading(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', 'PROOF_OF_ADDRESS');
+      formData.append('description', 'Proof of Address Document');
+
+      const response = await fetch(`/api/transactions/${transactionId}/documents`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || 'Upload failed');
+        setUploading(false);
+        return;
+      }
+
+      setUploaded(true);
+      setFile(null);
+    } catch (err) {
+      setError('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (uploaded) {
+    return (
+      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-green-800">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span className="font-semibold">Proof of Address document uploaded successfully</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-2 border-gray-200 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 mb-3">🏠 Proof of Address Document</h4>
+      <input
+        type="file"
+        accept="image/*,application/pdf,.doc,.docx"
+        onChange={(e) => {
+          if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+            setError('');
+          }
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md mb-2"
+        disabled={uploading}
+      />
+      {file && (
+        <p className="text-sm text-gray-600 mb-3">Selected: {file.name}</p>
+      )}
+      {error && (
+        <p className="text-sm text-red-600 mb-3">{error}</p>
+      )}
+      <button
+        onClick={handleUpload}
+        disabled={!file || uploading}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+      >
+        {uploading ? 'Uploading...' : 'Upload Proof of Address'}
+      </button>
+      <p className="text-xs text-gray-500 mt-2">
+        Accepted: Utility bill, bank statement, IRD letter, council rates, etc. (PDF, JPG, PNG, Word)
+      </p>
+    </div>
+  );
+}
 
 export default function NewTransactionPage() {
   const router = useRouter();
@@ -31,7 +208,6 @@ export default function NewTransactionPage() {
     firstName: '',
     lastName: '',
     dob: '',
-    phone: '',
     email: '',
     address: '',
     // Enhanced AML fields
@@ -53,6 +229,11 @@ export default function NewTransactionPage() {
   const [viewingDocUrl, setViewingDocUrl] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [agentContext, setAgentContext] = useState<{id: string; code: string; name: string; location?: string} | null>(null);
+  const [transactionCreated, setTransactionCreated] = useState<{id: string; txnNumber: string} | null>(null);
+  const [showUploadPrompt, setShowUploadPrompt] = useState(false);
+  const [sourceOfFundsFile, setSourceOfFundsFile] = useState<File | null>(null);
+  const [proofOfAddressFile, setProofOfAddressFile] = useState<File | null>(null);
+  const [familyContributions, setFamilyContributions] = useState<Array<{contributorName: string; amountNzdCents: number; relationship?: string}>>([]);
 
   const [formData, setFormData] = useState({
     customerId: '',
@@ -152,27 +333,32 @@ export default function NewTransactionPage() {
     }
   }, [formData.currency, rates]);
 
-  // Auto-calculate fee when amount changes (for percentage-based fees)
+  // Auto-calculate fee when amount changes (for percentage-based and bracket-based fees)
   useEffect(() => {
-    if (feeSettings && feeSettings.feeType === 'PERCENTAGE' && formData.amountNzd) {
+    if (feeSettings && formData.amountNzd) {
       const amount = parseFloat(formData.amountNzd);
       if (!isNaN(amount) && amount > 0) {
-        let calculatedFee = amount * (feeSettings.feePercentage / 100);
+        if (feeSettings.feeType === 'PERCENTAGE') {
+          let calculatedFee = amount * (feeSettings.feePercentage / 100);
 
-        // Apply minimum fee
-        if (calculatedFee < feeSettings.minimumFeeNzd) {
-          calculatedFee = feeSettings.minimumFeeNzd;
+          // Apply minimum fee
+          if (calculatedFee < feeSettings.minimumFeeNzd) {
+            calculatedFee = feeSettings.minimumFeeNzd;
+          }
+
+          // Apply maximum fee if set
+          if (feeSettings.maximumFeeNzd && calculatedFee > feeSettings.maximumFeeNzd) {
+            calculatedFee = feeSettings.maximumFeeNzd;
+          }
+
+          setFormData(prev => ({
+            ...prev,
+            feeNzd: calculatedFee.toFixed(2)
+          }));
+        } else if (feeSettings.feeType === 'BRACKET') {
+          // Calculate bracket-based fee
+          calculateBracketFee(amount);
         }
-
-        // Apply maximum fee if set
-        if (feeSettings.maximumFeeNzd && calculatedFee > feeSettings.maximumFeeNzd) {
-          calculatedFee = feeSettings.maximumFeeNzd;
-        }
-
-        setFormData(prev => ({
-          ...prev,
-          feeNzd: calculatedFee.toFixed(2)
-        }));
       }
     }
   }, [formData.amountNzd, feeSettings]);
@@ -199,9 +385,37 @@ export default function NewTransactionPage() {
           ...prev,
           feeNzd: data.settings.defaultFeeNzd.toFixed(2)
         }));
+      } else if (data.settings && data.settings.feeType === 'BRACKET' && formData.amountNzd) {
+        // Calculate fee based on bracket
+        await calculateBracketFee(parseFloat(formData.amountNzd));
       }
     } catch (err) {
       console.error('Failed to fetch fee settings');
+    }
+  }
+
+  async function calculateBracketFee(amountNzd: number) {
+    try {
+      console.log('Calculating bracket fee for amount:', amountNzd);
+      const response = await fetch('/api/fees/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountNzd })
+      });
+      const data = await response.json();
+
+      console.log('Fee calculation response:', data);
+
+      if (response.ok) {
+        setFormData(prev => ({
+          ...prev,
+          feeNzd: data.feeNzd.toFixed(2)
+        }));
+      } else {
+        console.error('Fee calculation failed:', data);
+      }
+    } catch (err) {
+      console.error('Failed to calculate bracket fee:', err);
     }
   }
 
@@ -407,7 +621,6 @@ export default function NewTransactionPage() {
         firstName: '',
         lastName: '',
         dob: '',
-        phone: '',
         email: '',
         address: '',
         // Enhanced AML fields
@@ -524,11 +737,156 @@ export default function NewTransactionPage() {
       }
 
       toast.success(`Transaction created successfully! TXN: ${data.transaction.txnNumber}`);
+
+      const transactionId = data.transaction.id;
+      const txnNumber = data.transaction.txnNumber;
+
+      // Upload files and save family contributions if they were provided
+      const uploadPromises = [];
+
+      if (sourceOfFundsFile) {
+        const formData = new FormData();
+        formData.append('file', sourceOfFundsFile);
+        formData.append('documentType', 'SOURCE_OF_FUNDS');
+        formData.append('description', 'Source of Funds Document');
+
+        uploadPromises.push(
+          fetch(`/api/transactions/${transactionId}/documents`, {
+            method: 'POST',
+            body: formData
+          })
+        );
+      }
+
+      if (proofOfAddressFile) {
+        const formData = new FormData();
+        formData.append('file', proofOfAddressFile);
+        formData.append('documentType', 'PROOF_OF_ADDRESS');
+        formData.append('description', 'Proof of Address Document');
+
+        uploadPromises.push(
+          fetch(`/api/transactions/${transactionId}/documents`, {
+            method: 'POST',
+            body: formData
+          })
+        );
+      }
+
+      // Save family contributions if source of funds is FAMILY_CONTRIBUTIONS
+      if (formData.sourceOfFunds === 'FAMILY_CONTRIBUTIONS' && familyContributions.length > 0) {
+        for (const contribution of familyContributions) {
+          uploadPromises.push(
+            fetch(`/api/transactions/${transactionId}/family-contributions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(contribution)
+            })
+          );
+        }
+      }
+
+      // Wait for all uploads to complete
+      if (uploadPromises.length > 0) {
+        try {
+          await Promise.all(uploadPromises);
+          toast.success('Documents uploaded successfully!');
+        } catch (uploadErr) {
+          console.error('Error uploading documents:', uploadErr);
+          toast.error('Transaction created but some documents failed to upload');
+        }
+      }
+
+      // Redirect to transactions list after successful creation
+      setLoading(false);
       router.push('/transactions/list');
     } catch (err) {
       setError('An error occurred. Please try again.');
       setLoading(false);
     }
+  }
+
+  // Show upload prompt after transaction creation
+  if (showUploadPrompt && transactionCreated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
+        <Navigation />
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow-xl p-8">
+            {/* Success Message */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Transaction Created Successfully!</h1>
+              <p className="text-lg text-gray-600 mb-1">Transaction Number:</p>
+              <div className="bg-blue-50 p-3 rounded-lg inline-block mb-4">
+                <p className="text-2xl font-bold text-blue-600">{transactionCreated.txnNumber}</p>
+              </div>
+            </div>
+
+            {/* Upload Documents Section */}
+            <div className="border-t border-gray-200 pt-6">
+              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <div>
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                      Upload Supporting Documents (Optional)
+                    </h3>
+                    <p className="text-sm text-blue-800 mb-3">
+                      You can upload supporting documents for this transaction:
+                    </p>
+                    <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                      <li><strong>Source of Funds</strong> - Bank statement, payslip, sale agreement, etc.</li>
+                      <li><strong>Proof of Address</strong> - Utility bill, bank statement, IRD letter, council rates, etc.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* File Upload Inputs */}
+              <div className="space-y-6">
+                {/* Source of Funds Upload */}
+                <SourceOfFundsUpload transactionId={transactionCreated.id} />
+
+                {/* Proof of Address Upload */}
+                <ProofOfAddressUpload transactionId={transactionCreated.id} />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-8 space-y-3">
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => router.push('/transactions/list')}
+                    className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-semibold"
+                  >
+                    Skip - No Documents
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUploadPrompt(false);
+                      setTransactionCreated(null);
+                      // Reset form to create another transaction
+                      window.location.reload();
+                    }}
+                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                  >
+                    Create Another Transaction
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 text-center">
+                  You can upload or manage documents later from the transaction details page
+                </p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -1001,7 +1359,7 @@ export default function NewTransactionPage() {
                   <div className="space-y-4 mb-4">
                     <h3 className="font-medium text-gray-900">Source of Funds</h3>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-700">
                           Source of Funds <span className="text-red-500">*</span>
                         </label>
@@ -1021,6 +1379,46 @@ export default function NewTransactionPage() {
                           <option value="FUNDRAISING_RAFFLE">Fundraising/Raffle</option>
                           <option value="OTHER">Other</option>
                         </select>
+
+                        {/* Source of Funds File Upload - Shows when option selected */}
+                        {formData.sourceOfFunds && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              📄 Upload Source of Funds Document {requiresEnhancedAML ? <span className="text-red-500">*</span> : '(Optional)'}
+                            </label>
+                            <input
+                              type="file"
+                              required={requiresEnhancedAML}
+                              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setSourceOfFundsFile(e.target.files[0]);
+                                }
+                              }}
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                            />
+                            {sourceOfFundsFile && (
+                              <p className="mt-1 text-xs text-green-600">✓ Selected: {sourceOfFundsFile.name}</p>
+                            )}
+                            <p className="mt-1 text-xs text-gray-500">
+                              Accepted: PDF, Images (JPG, PNG), Word, Excel
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Family Contributions Table - Shows when FAMILY_CONTRIBUTIONS is selected */}
+                        {formData.sourceOfFunds === 'FAMILY_CONTRIBUTIONS' && (
+                          <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3">👨‍👩‍👧‍👦 Family Member Contributions</h4>
+                            <p className="text-xs text-gray-600 mb-3">
+                              Please list all family members who have contributed funds for this transaction.
+                            </p>
+                            <FamilyContributionsTable
+                              contributions={familyContributions}
+                              onContributionsChange={setFamilyContributions}
+                            />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
@@ -1036,18 +1434,17 @@ export default function NewTransactionPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">
-                          Bank Account Details <span className="text-red-500">*</span>
+                          Bank Account Details
                         </label>
                         <input
                           type="text"
-                          required={requiresEnhancedAML}
                           value={formData.bankAccountDetails}
                           onChange={(e) => setFormData({ ...formData, bankAccountDetails: e.target.value })}
                           placeholder="Account number"
                           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                         />
                       </div>
-                      <div>
+                      <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-700">
                           Proof of Address Type <span className="text-red-500">*</span>
                         </label>
@@ -1067,6 +1464,32 @@ export default function NewTransactionPage() {
                           <option value="BILL">Utility Bill</option>
                           <option value="OTHER">Other</option>
                         </select>
+
+                        {/* Proof of Address File Upload - Shows when option selected */}
+                        {formData.proofOfAddressType && (
+                          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              🏠 Upload Proof of Address Document {requiresEnhancedAML ? <span className="text-red-500">*</span> : '(Optional)'}
+                            </label>
+                            <input
+                              type="file"
+                              required={requiresEnhancedAML}
+                              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  setProofOfAddressFile(e.target.files[0]);
+                                }
+                              }}
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700"
+                            />
+                            {proofOfAddressFile && (
+                              <p className="mt-1 text-xs text-green-600">✓ Selected: {proofOfAddressFile.name}</p>
+                            )}
+                            <p className="mt-1 text-xs text-gray-500">
+                              Accepted: PDF, Images (JPG, PNG), Word, Excel
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1139,7 +1562,7 @@ export default function NewTransactionPage() {
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700">Source of Funds</label>
                       <select
                         value={formData.sourceOfFunds}
@@ -1156,8 +1579,49 @@ export default function NewTransactionPage() {
                         <option value="FUNDRAISING_RAFFLE">Fundraising/Raffle</option>
                         <option value="OTHER">Other</option>
                       </select>
+
+                      {/* Source of Funds File Upload - Shows when option selected */}
+                      {formData.sourceOfFunds && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            📄 Upload Source of Funds Document {requiresEnhancedAML ? <span className="text-red-500">*</span> : '(Optional)'}
+                          </label>
+                          <input
+                            type="file"
+                            required={requiresEnhancedAML}
+                            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setSourceOfFundsFile(e.target.files[0]);
+                              }
+                            }}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                          />
+                          {sourceOfFundsFile && (
+                            <p className="mt-1 text-xs text-green-600">✓ Selected: {sourceOfFundsFile.name}</p>
+                          )}
+                          <p className="mt-1 text-xs text-gray-500">
+                            Accepted: PDF, Images (JPG, PNG), Word, Excel
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Family Contributions Table - Shows when FAMILY_CONTRIBUTIONS is selected */}
+                      {formData.sourceOfFunds === 'FAMILY_CONTRIBUTIONS' && (
+                        <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3">👨‍👩‍👧‍👦 Family Member Contributions</h4>
+                          <p className="text-xs text-gray-600 mb-3">
+                            Please list all family members who have contributed funds for this transaction.
+                          </p>
+                          <FamilyContributionsTable
+                            contributions={familyContributions}
+                            onContributionsChange={setFamilyContributions}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <div>
+
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700">Proof of Address</label>
                       <select
                         value={formData.proofOfAddressType}
@@ -1174,6 +1638,32 @@ export default function NewTransactionPage() {
                         <option value="BILL">Utility Bill</option>
                         <option value="OTHER">Other</option>
                       </select>
+
+                      {/* Proof of Address File Upload - Shows when option selected */}
+                      {formData.proofOfAddressType && (
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            🏠 Upload Proof of Address Document {requiresEnhancedAML ? <span className="text-red-500">*</span> : '(Optional)'}
+                          </label>
+                          <input
+                            type="file"
+                            required={requiresEnhancedAML}
+                            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setProofOfAddressFile(e.target.files[0]);
+                              }
+                            }}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700"
+                          />
+                          {proofOfAddressFile && (
+                            <p className="mt-1 text-xs text-green-600">✓ Selected: {proofOfAddressFile.name}</p>
+                          )}
+                          <p className="mt-1 text-xs text-gray-500">
+                            Accepted: PDF, Images (JPG, PNG), Word, Excel
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1299,20 +1789,6 @@ export default function NewTransactionPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={newCustomer.phone}
-                  onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                  placeholder="+64212345678"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email
                 </label>
                 <input
@@ -1324,12 +1800,39 @@ export default function NewTransactionPage() {
                 />
               </div>
 
-              {/* Address Details */}
+              {/* Phone & Address Details */}
               <div className="border-t border-gray-200 pt-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Address Details (Optional)</h4>
-                <p className="text-xs text-gray-600 mb-4">These fields will be auto-filled for transactions ≥ NZ$1,000</p>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Phone & Address Details</h4>
+                <p className="text-xs text-gray-600 mb-4">These fields will be auto-filled for transactions</p>
 
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Home Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={newCustomer.homePhone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, homePhone: e.target.value })}
+                      placeholder="+64212345678"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Mobile Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={newCustomer.mobilePhone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, mobilePhone: e.target.value })}
+                      placeholder="+64212345678"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Street Address
@@ -1374,31 +1877,6 @@ export default function NewTransactionPage() {
                       type="text"
                       value={newCustomer.postcode}
                       onChange={(e) => setNewCustomer({ ...newCustomer, postcode: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Home Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={newCustomer.homePhone}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, homePhone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Mobile Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={newCustomer.mobilePhone}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, mobilePhone: e.target.value })}
-                      placeholder="Usually same as primary phone"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -1504,7 +1982,7 @@ export default function NewTransactionPage() {
                     </div>
                     <input
                       type="file"
-                      accept="image/*,application/pdf"
+                      accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
                       onChange={handleFileSelect}
                       className="hidden"
                       multiple

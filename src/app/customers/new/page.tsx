@@ -24,7 +24,6 @@ export default function NewCustomerPage() {
     firstName: '',
     lastName: '',
     dob: '',
-    phone: '',
     email: '',
     address: '',
     // Enhanced AML fields
@@ -242,23 +241,6 @@ export default function NewCustomerPage() {
               <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Phone Number <span className="text-red-500">*</span>
-                  <span className="text-xs text-gray-500 ml-2">(E.164 format, e.g., +6421234567)</span>
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  required
-                  placeholder="+6421234567"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  disabled={loading}
-                />
-              </div>
-
-              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email Address
                 </label>
@@ -287,11 +269,46 @@ export default function NewCustomerPage() {
               </div>
             </div>
 
-            {/* Enhanced AML Information */}
+            {/* Phone & Address Information */}
             <div className="space-y-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Enhanced AML Information (Optional)</h2>
-                <p className="text-sm text-gray-600 mt-1">These details will auto-populate for transactions ≥ NZ$1,000</p>
+                <h2 className="text-lg font-semibold text-gray-900">Phone & Address Information</h2>
+                <p className="text-sm text-gray-600 mt-1">These details will auto-populate in the AML form for transactions</p>
+              </div>
+
+              {/* Phone Numbers */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="homePhone" className="block text-sm font-medium text-gray-700">
+                    Home Phone
+                  </label>
+                  <input
+                    id="homePhone"
+                    type="tel"
+                    placeholder="+6421234567"
+                    value={formData.homePhone}
+                    onChange={(e) => setFormData({ ...formData, homePhone: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="mobilePhone" className="block text-sm font-medium text-gray-700">
+                    Mobile Phone <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 ml-2">(E.164 format, e.g., +6421234567)</span>
+                  </label>
+                  <input
+                    id="mobilePhone"
+                    type="tel"
+                    required
+                    placeholder="+6421234567"
+                    value={formData.mobilePhone}
+                    onChange={(e) => setFormData({ ...formData, mobilePhone: e.target.value })}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                  />
+                </div>
               </div>
 
               {/* Address Details */}
@@ -347,35 +364,6 @@ export default function NewCustomerPage() {
                     type="text"
                     value={formData.postcode}
                     onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    disabled={loading}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="homePhone" className="block text-sm font-medium text-gray-700">
-                    Home Phone
-                  </label>
-                  <input
-                    id="homePhone"
-                    type="tel"
-                    value={formData.homePhone}
-                    onChange={(e) => setFormData({ ...formData, homePhone: e.target.value })}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    disabled={loading}
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="mobilePhone" className="block text-sm font-medium text-gray-700">
-                    Mobile Phone
-                  </label>
-                  <input
-                    id="mobilePhone"
-                    type="tel"
-                    value={formData.mobilePhone}
-                    onChange={(e) => setFormData({ ...formData, mobilePhone: e.target.value })}
-                    placeholder="Usually same as primary phone"
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loading}
                   />

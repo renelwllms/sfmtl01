@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatNZDate, formatNZDateTime } from '@/lib/date-utils';
@@ -17,6 +18,9 @@ export default function CustomerDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [viewingFile, setViewingFile] = useState<string | null>(null);
   const [selectedDocType, setSelectedDocType] = useState<string>('DRIVERS_LICENSE');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchCustomer();
@@ -30,11 +34,60 @@ export default function CustomerDetailPage() {
       }
       const data = await response.json();
       setCustomer(data.customer);
+      setEditForm(data.customer); // Initialize edit form
     } catch (err) {
       setError('Failed to load customer details');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSaveEdit() {
+    if (!editForm) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/customers/${params.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          email: editForm.email,
+          address: editForm.address,
+          streetAddress: editForm.streetAddress,
+          suburb: editForm.suburb,
+          city: editForm.city,
+          postcode: editForm.postcode,
+          homePhone: editForm.homePhone,
+          mobilePhone: editForm.mobilePhone,
+          occupation: editForm.occupation,
+          employerName: editForm.employerName,
+          employerAddress: editForm.employerAddress,
+          employerPhone: editForm.employerPhone
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update customer');
+      }
+
+      const data = await response.json();
+      setCustomer(data.customer);
+      setEditForm(data.customer);
+      setIsEditing(false);
+      toast.success('Customer updated successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update customer');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleCancelEdit() {
+    setEditForm(customer);
+    setIsEditing(false);
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -138,32 +191,205 @@ export default function CustomerDetailPage() {
               <h1 className="text-2xl font-bold text-gray-900">{customer.fullName}</h1>
               <p className="text-sm text-gray-500">Customer ID: {customer.customerId}</p>
             </div>
-            <a
-              href={`/transactions/new?customerId=${customer.id}`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              New Transaction
-            </a>
+            <div className="flex gap-2">
+              {!isEditing ? (
+                <>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Edit Customer
+                  </button>
+                  <a
+                    href={`/transactions/new?customerId=${customer.id}`}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    New Transaction
+                  </a>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={saving}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Phone</p>
-              <p className="text-gray-900">{customer.phone}</p>
+          {!isEditing ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Mobile Phone</p>
+                <p className="text-gray-900">{customer.mobilePhone || customer.phone}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Home Phone</p>
+                <p className="text-gray-900">{customer.homePhone || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Email</p>
+                <p className="text-gray-900">{customer.email || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Date of Birth</p>
+                <p className="text-gray-900">{formatNZDate(customer.dob)}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-sm font-medium text-gray-500">Address</p>
+                <p className="text-gray-900">{customer.streetAddress || customer.address || 'N/A'}</p>
+                {customer.suburb && <p className="text-gray-900">{customer.suburb}</p>}
+                {customer.city && <p className="text-gray-900">{customer.city} {customer.postcode}</p>}
+              </div>
+              {customer.occupation && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Occupation</p>
+                  <p className="text-gray-900">{customer.occupation}</p>
+                </div>
+              )}
+              {customer.employerName && (
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Employer</p>
+                  <p className="text-gray-900">{customer.employerName}</p>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
-              <p className="text-gray-900">{customer.email || 'N/A'}</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                  <input
+                    type="text"
+                    value={editForm?.firstName || ''}
+                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={editForm?.lastName || ''}
+                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Phone</label>
+                  <input
+                    type="tel"
+                    value={editForm?.mobilePhone || ''}
+                    onChange={(e) => setEditForm({ ...editForm, mobilePhone: e.target.value })}
+                    placeholder="+64212345678"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Home Phone</label>
+                  <input
+                    type="tel"
+                    value={editForm?.homePhone || ''}
+                    onChange={(e) => setEditForm({ ...editForm, homePhone: e.target.value })}
+                    placeholder="+64212345678"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={editForm?.email || ''}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                  <input
+                    type="text"
+                    value={editForm?.streetAddress || ''}
+                    onChange={(e) => setEditForm({ ...editForm, streetAddress: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Suburb</label>
+                  <input
+                    type="text"
+                    value={editForm?.suburb || ''}
+                    onChange={(e) => setEditForm({ ...editForm, suburb: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <input
+                    type="text"
+                    value={editForm?.city || ''}
+                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Postcode</label>
+                  <input
+                    type="text"
+                    value={editForm?.postcode || ''}
+                    onChange={(e) => setEditForm({ ...editForm, postcode: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Occupation</label>
+                  <input
+                    type="text"
+                    value={editForm?.occupation || ''}
+                    onChange={(e) => setEditForm({ ...editForm, occupation: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employer Name</label>
+                  <input
+                    type="text"
+                    value={editForm?.employerName || ''}
+                    onChange={(e) => setEditForm({ ...editForm, employerName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employer Address</label>
+                  <input
+                    type="text"
+                    value={editForm?.employerAddress || ''}
+                    onChange={(e) => setEditForm({ ...editForm, employerAddress: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Employer Phone</label>
+                  <input
+                    type="tel"
+                    value={editForm?.employerPhone || ''}
+                    onChange={(e) => setEditForm({ ...editForm, employerPhone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Date of Birth</p>
-              <p className="text-gray-900">{formatNZDate(customer.dob)}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Address</p>
-              <p className="text-gray-900">{customer.address || 'N/A'}</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Transaction Chart */}
@@ -264,7 +490,9 @@ export default function CustomerDetailPage() {
                   <li key={txn.id} className="border-b pb-3">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="font-medium text-gray-900">{txn.txnNumber}</p>
+                        <Link href={`/transactions/${txn.id}`} className="font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                          {txn.txnNumber}
+                        </Link>
                         <p className="text-sm text-gray-600">To: {txn.beneficiaryName}</p>
                         <p className="text-xs text-gray-500">
                           {formatNZDate(txn.createdAt)}

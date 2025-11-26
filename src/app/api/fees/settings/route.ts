@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (feeType !== 'FIXED' && feeType !== 'PERCENTAGE') {
+    if (feeType !== 'FIXED' && feeType !== 'PERCENTAGE' && feeType !== 'BRACKET') {
       return NextResponse.json(
-        { error: 'feeType must be either FIXED or PERCENTAGE' },
+        { error: 'feeType must be either FIXED, PERCENTAGE, or BRACKET' },
         { status: 400 }
       );
     }

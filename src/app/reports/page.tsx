@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { formatNZDate } from '@/lib/date-utils';
 
@@ -290,7 +291,11 @@ export default function ReportsPage() {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {report.transactions.map((txn: any) => (
                         <tr key={txn.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900">{txn.txnNumber}</td>
+                          <td className="px-4 py-3 text-sm font-medium">
+                            <Link href={`/transactions/${txn.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                              {txn.txnNumber}
+                            </Link>
+                          </td>
                           <td className="px-4 py-3 text-sm text-gray-600">
                             {formatNZDate(txn.date)}
                           </td>
@@ -304,8 +309,10 @@ export default function ReportsPage() {
                               <div className="font-medium text-blue-600">Head Office</div>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">
-                            <div>{txn.customer.fullName}</div>
+                          <td className="px-4 py-3 text-sm">
+                            <Link href={`/customers/${txn.customer.id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                              {txn.customer.fullName}
+                            </Link>
                             <div className="text-xs text-gray-500">{txn.customer.customerId}</div>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">{txn.beneficiaryName}</td>

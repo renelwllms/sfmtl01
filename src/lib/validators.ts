@@ -18,7 +18,7 @@ export const CustomerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   dob: dob18,
-  phone: e164,
+  mobilePhone: e164,
   email: z.string().email().optional().or(z.literal('')),
   address: z.string().optional(),
   // Enhanced AML fields (optional, for >= NZ$1,000 transactions)
@@ -27,7 +27,6 @@ export const CustomerSchema = z.object({
   city: z.string().optional(),
   postcode: z.string().optional(),
   homePhone: z.string().optional(),
-  mobilePhone: z.string().optional(),
   occupation: z.string().optional(),
   employerName: z.string().optional(),
   employerAddress: z.string().optional(),

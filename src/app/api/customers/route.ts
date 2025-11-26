@@ -131,9 +131,9 @@ export async function POST(request: NextRequest) {
 
     const data = validation.data;
 
-    // Check if phone already exists
+    // Check if mobile phone already exists (using phone field as primary)
     const existing = await db.customer.findUnique({
-      where: { phone: data.phone }
+      where: { phone: data.mobilePhone }
     });
 
     if (existing) {
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     // Calculate fullName
     const fullName = `${data.firstName} ${data.lastName}`;
 
-    // Create customer
+    // Create customer - store mobilePhone in the phone field for backwards compatibility
     const customer = await db.customer.create({
       data: {
         customerId,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
         lastName: data.lastName,
         fullName,
         dob: data.dob,
-        phone: data.phone,
+        phone: data.mobilePhone, // Use mobile phone as primary phone
         email: data.email || null,
         address: data.address || null,
         // Enhanced AML fields
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
         city: data.city || null,
         postcode: data.postcode || null,
         homePhone: data.homePhone || null,
-        mobilePhone: data.mobilePhone || null,
+        mobilePhone: data.mobilePhone,
         occupation: data.occupation || null,
         employerName: data.employerName || null,
         employerAddress: data.employerAddress || null,
