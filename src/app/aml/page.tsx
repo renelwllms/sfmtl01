@@ -137,8 +137,10 @@ export default function AMLPage() {
     }
 
     try {
-      const ids = Array.from(selectedTransactions).join(',');
-      const response = await fetch(`/api/aml/export?ids=${ids}`);
+      const params = new URLSearchParams({
+        ids: Array.from(selectedTransactions).join(',')
+      });
+      const response = await fetch(`/api/aml/export?${params.toString()}`);
 
       if (response.ok) {
         const blob = await response.blob();

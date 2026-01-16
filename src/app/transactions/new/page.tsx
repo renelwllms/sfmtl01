@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, Suspense } from 'react';
+import { useState, useEffect, FormEvent, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import FamilyContributionsTable from '@/components/FamilyContributionsTable';
@@ -227,6 +227,19 @@ function NewTransactionPageContent() {
   const [uploadingIds, setUploadingIds] = useState(false);
   const [selectedProofDocs, setSelectedProofDocs] = useState<string[]>([]);
   const [viewingDocUrl, setViewingDocUrl] = useState<string | null>(null);
+  const safeViewingDocUrl = useMemo(() => {
+    if (!viewingDocUrl) return null;
+
+    if (!viewingDocUrl.startsWith('/') || viewingDocUrl.startsWith('//')) {
+      return null;
+    }
+
+    if (!viewingDocUrl.startsWith('/api/customers/')) {
+      return null;
+    }
+
+    return encodeURI(viewingDocUrl);
+  }, [viewingDocUrl]);
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [agentContext, setAgentContext] = useState<{id: string; code: string; name: string; location?: string} | null>(null);
   const [transactionCreated, setTransactionCreated] = useState<{id: string; txnNumber: string} | null>(null);
@@ -2061,7 +2074,7 @@ function NewTransactionPageContent() {
       )}
 
       {/* Document Viewer Modal */}
-      {viewingDocUrl && (
+      {safeViewingDocUrl && (
         <div
           className="fixed inset-0 bg-black bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
           onClick={() => setViewingDocUrl(null)}
@@ -2086,7 +2099,7 @@ function NewTransactionPageContent() {
             {/* Image Content */}
             <div className="p-4 overflow-auto max-h-[calc(90vh-80px)] flex items-center justify-center bg-gray-100">
               <img
-                src={viewingDocUrl}
+                src={safeViewingDocUrl}
                 alt="ID Document"
                 className="max-w-full max-h-full object-contain rounded"
               />

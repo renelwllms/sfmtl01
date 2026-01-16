@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         enabled: settings.enabled,
         tenantId: settings.tenantId || '',
         clientId: settings.clientId || '',
-        clientSecret: settings.clientSecret ? '***hidden***' : '',
+        clientSecret: '',
         senderEmail: settings.senderEmail || '',
         senderName: settings.senderName || ''
       }
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         enabled: settings.enabled,
         tenantId: settings.tenantId || '',
         clientId: settings.clientId || '',
-        clientSecret: '***hidden***', // Don't send back the secret
+        clientSecret: '',
         senderEmail: settings.senderEmail || '',
         senderName: settings.senderName || ''
       }

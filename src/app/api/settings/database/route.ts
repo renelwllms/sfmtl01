@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
       settings: {
         ...settings,
         password: '',
-        databaseUrl: redactDatabaseUrl(dbUrl),
-        directUrl: redactDatabaseUrl(directUrl),
+        databaseUrl: '',
+        directUrl: '',
         dbType: detectDatabaseType(dbUrl)
       }
     });
