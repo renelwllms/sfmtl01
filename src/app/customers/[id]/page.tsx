@@ -33,7 +33,7 @@ export default function CustomerDetailPage() {
       return null;
     }
 
-    return viewingFile;
+    return encodeURI(viewingFile);
   }, [viewingFile, params.id]);
 
   useEffect(() => {
