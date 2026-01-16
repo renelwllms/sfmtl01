@@ -258,9 +258,8 @@ Database Configuration:
 
 NextAuth Secret: $NEXTAUTH_SECRET
 
-Default Login Credentials:
-- Admin: admin@samoafinance.local / Admin@123
-- Staff: staff@samoafinance.local / Staff@123
+Default Login:
+- Microsoft SSO only (users are created on first sign-in)
 
 ⚠️  REVERSE PROXY CONFIGURATION REQUIRED:
 Configure your external Nginx Proxy Manager to:

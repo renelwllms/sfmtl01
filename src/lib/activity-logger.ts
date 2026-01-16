@@ -1,7 +1,8 @@
 import { db } from './db';
+import { ActivityType } from '@prisma/client';
 
 export interface LogActivityParams {
-  type: string;
+  type: ActivityType;
   userId?: string;
   userEmail?: string;
   description: string;

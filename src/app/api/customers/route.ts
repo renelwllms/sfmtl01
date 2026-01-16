@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     const validation = CustomerSchema.safeParse(body);
     if (!validation.success) {
       // Format validation errors into user-friendly messages
-      const errors = validation.error?.errors || [];
+      const errors = validation.error?.issues || [];
       const errorMessages = errors.map(err => {
         const field = err.path.join('.');
         return `${field}: ${err.message}`;

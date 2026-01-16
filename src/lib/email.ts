@@ -76,7 +76,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
             from: {
               emailAddress: {
                 address: settings.senderEmail,
-                name: settings.senderName || 'SFMTL'
+                name: settings.senderName || 'TransferPoint'
               }
             }
           },
@@ -125,7 +125,7 @@ export function generateTransactionInProgressEmail(transaction: any): string {
   <div class="container">
     <div class="header">
       <h1>Transaction Received</h1>
-      <p>SFMTL - Samoa Finance Money Transfer</p>
+      <p>TransferPoint</p>
     </div>
     <div class="content">
       <p>Dear ${transaction.customer?.fullName || transaction.senderName},</p>
@@ -172,8 +172,8 @@ export function generateTransactionInProgressEmail(transaction: any): string {
       <p>If you have any questions about this transaction, please contact us with your transaction number.</p>
     </div>
     <div class="footer">
-      <p>This is an automated message from SFMTL.</p>
-      <p>© ${new Date().getFullYear()} SFMTL - Samoa Finance Money Transfer Ltd. All rights reserved.</p>
+      <p>This is an automated message from TransferPoint.</p>
+      <p>© ${new Date().getFullYear()} TransferPoint. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -208,7 +208,7 @@ export function generateTransactionCompletedEmail(transaction: any): string {
   <div class="container">
     <div class="header">
       <h1>✓ Transaction Completed</h1>
-      <p>SFMTL - Samoa Finance Money Transfer</p>
+      <p>TransferPoint</p>
     </div>
     <div class="content">
       <p>Dear ${transaction.customer?.fullName || transaction.senderName},</p>
@@ -251,11 +251,11 @@ export function generateTransactionCompletedEmail(transaction: any): string {
       </div>
 
       <p><strong>Your beneficiary can now collect the funds.</strong></p>
-      <p>Thank you for choosing SFMTL for your money transfer needs.</p>
+      <p>Thank you for choosing TransferPoint for your money transfer needs.</p>
     </div>
     <div class="footer">
-      <p>This is an automated message from SFMTL.</p>
-      <p>© ${new Date().getFullYear()} SFMTL - Samoa Finance Money Transfer Ltd. All rights reserved.</p>
+      <p>This is an automated message from TransferPoint.</p>
+      <p>© ${new Date().getFullYear()} TransferPoint. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -289,7 +289,7 @@ export function generateTransactionReceiptEmail(transaction: any): string {
   <div class="container">
     <div class="header">
       <h1>Transaction Receipt</h1>
-      <p>SFMTL - Samoa Finance Money Transfer</p>
+      <p>TransferPoint</p>
     </div>
     <div class="content">
       <p>Dear ${transaction.customer.fullName},</p>
@@ -330,8 +330,8 @@ export function generateTransactionReceiptEmail(transaction: any): string {
       <p><strong>Important:</strong> Please keep this receipt for your records. If you have any questions about this transaction, please contact us.</p>
     </div>
     <div class="footer">
-      <p>This is an automated message from SFMTL.</p>
-      <p>© ${new Date().getFullYear()} SFMTL - Samoa Finance Money Transfer Ltd. All rights reserved.</p>
+      <p>This is an automated message from TransferPoint.</p>
+      <p>© ${new Date().getFullYear()} TransferPoint. All rights reserved.</p>
     </div>
   </div>
 </body>

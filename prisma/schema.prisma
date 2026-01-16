@@ -59,6 +59,17 @@ model User {
   roles        String        @default("STAFF") // Comma-separated roles: "STAFF,AML" or "ADMIN,AML"
   createdAt    DateTime      @default(now())
   transactions Transaction[] @relation("TransactionCreatedBy")
+  settings     UserSettings?
+}
+
+model UserSettings {
+  id                        String   @id @default(cuid())
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                    String   @unique
+  notificationsEnabled      Boolean  @default(true)
+  soundNotificationsEnabled Boolean  @default(true)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 }
 
 model Customer {
@@ -129,6 +140,18 @@ model FamilyContribution {
   contributorName String     // Name of the family member who contributed
   amountNzdCents Int        // Amount contributed in NZD cents
   relationship   String?     // Relationship to sender (e.g., "Mother", "Brother")
+  createdAt      DateTime    @default(now())
+
+  @@index([transactionId])
+}
+
+model TransactionSourceOfFundsFile {
+  id             String      @id @default(cuid())
+  transaction    Transaction @relation("TransactionSourceOfFundsFiles", fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId  String
+  filePath       String      // Path to the file on disk
+  fileName       String      // Original filename
+  mimeType       String      // File MIME type
   createdAt      DateTime    @default(now())
 
   @@index([transactionId])
@@ -206,6 +229,8 @@ model Transaction {
   documents              TransactionDocument[] @relation("TransactionDocuments")
   // Family contributions (when sourceOfFunds is FAMILY_CONTRIBUTIONS)
   familyContributions    FamilyContribution[] @relation("FamilyContributions")
+  // Source of funds files
+  sourceOfFundsFiles     TransactionSourceOfFundsFile[] @relation("TransactionSourceOfFundsFiles")
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @default(now()) @updatedAt
 
@@ -255,6 +280,7 @@ enum AgentStatus {
 enum ActivityType {
   USER_LOGIN
   USER_LOGOUT
+  USER_CREATED
   CUSTOMER_CREATED
   CUSTOMER_UPDATED
   CUSTOMER_VIEWED
@@ -262,6 +288,8 @@ enum ActivityType {
   CUSTOMER_ID_VIEWED
   TRANSACTION_CREATED
   TRANSACTION_VIEWED
+  TRANSACTION_SOF_UPLOADED
+  TRANSACTION_SOF_VIEWED
   EXCHANGE_RATE_UPDATED
   SETTINGS_CHANGED
   REPORT_GENERATED

@@ -4,49 +4,81 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
-import { CheckCircleIcon, ExclamationTriangleIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, ExclamationTriangleIcon, ClockIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { playNotificationSound, getUserSettings } from '@/lib/notifications';
 
-interface EodRecord {
+interface Transaction {
   id: string;
+  txnNumber: string;
+  customer: {
+    customerId: string;
+    fullName: string;
+  };
+  beneficiaryName: string;
+  totalPaidNzdCents: number;
   date: string;
-  systemTotalCents: number;
-  systemTransactionCount: number;
-  cashReceivedCents: number;
-  differenceCents: number;
-  status: 'PENDING' | 'COMPLETED' | 'DISCREPANCY';
-  notes: string | null;
-  completedBy: string | null;
-  completedByEmail: string | null;
-  completedAt: string | null;
+  status: {
+    id: string;
+    name: string;
+    label: string;
+    color: string;
+  } | null;
   agent: {
     id: string;
     name: string;
     agentCode: string;
-    isHeadOffice: boolean;
   } | null;
+}
+
+interface DayGroup {
+  date: string;
+  transactions: Transaction[];
+  isExpanded: boolean;
+  totalAmount: number;
+  completedCount: number;
+  pendingCount: number;
 }
 
 export default function EodPage() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
-  const [eodRecords, setEodRecords] = useState<EodRecord[]>([]);
+  const [dayGroups, setDayGroups] = useState<DayGroup[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
+  const [allStatuses, setAllStatuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedAgent, setSelectedAgent] = useState<string>('');
-  const [showModal, setShowModal] = useState(false);
-  const [currentEod, setCurrentEod] = useState<EodRecord | null>(null);
-  const [cashReceived, setCashReceived] = useState('');
-  const [notes, setNotes] = useState('');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [expandAll, setExpandAll] = useState(false);
 
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
       router.push('/login');
     } else if (authStatus === 'authenticated') {
+      fetchUserSettings();
       fetchAgents();
-      fetchEodRecords();
+      fetchStatuses();
+      fetchTransactions();
     }
-  }, [authStatus, selectedDate, selectedAgent]);
+  }, [authStatus, selectedAgent]);
+
+  const fetchUserSettings = async () => {
+    const settings = await getUserSettings();
+    if (settings) {
+      setSoundEnabled(settings.soundNotificationsEnabled);
+    }
+  };
+
+  const fetchStatuses = async () => {
+    try {
+      const response = await fetch('/api/transaction-statuses');
+      if (response.ok) {
+        const data = await response.json();
+        setAllStatuses(data.filter((s: any) => s.isActive));
+      }
+    } catch (error) {
+      console.error('Error fetching statuses:', error);
+    }
+  };
 
   const fetchAgents = async () => {
     try {
@@ -60,112 +92,139 @@ export default function EodPage() {
     }
   };
 
-  const fetchEodRecords = async () => {
+  const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (selectedDate) params.append('date', selectedDate);
-      if (selectedAgent) params.append('agentId', selectedAgent);
+      const params = new URLSearchParams({
+        limit: '1000',
+        sortBy: 'date',
+        sortOrder: 'desc'
+      });
 
-      const response = await fetch(`/api/eod?${params}`);
+      if (selectedAgent) {
+        params.append('agentId', selectedAgent);
+      }
+
+      const response = await fetch(`/api/transactions?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setEodRecords(data.eodRecords);
+        const transactions = data.transactions as Transaction[];
+
+        const openStatus = allStatuses.find(s => s.name === 'OPEN');
+
+        const pendingTransactions = transactions.filter(txn => {
+          return !txn.status || (openStatus && txn.status.id === openStatus.id);
+        });
+
+        const grouped = groupTransactionsByDay(pendingTransactions);
+        setDayGroups(grouped);
       }
     } catch (error) {
-      console.error('Error fetching EOD records:', error);
+      console.error('Error fetching transactions:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateEod = async (agentId: string | null) => {
-    try {
-      const response = await fetch('/api/eod', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId,
-          date: selectedDate
-        })
-      });
+  const groupTransactionsByDay = (transactions: Transaction[]): DayGroup[] => {
+    const groups: { [key: string]: Transaction[] } = {};
 
-      if (response.ok) {
-        const newEod = await response.json();
-        setCurrentEod(newEod);
-        setCashReceived('');
-        setNotes('');
-        setShowModal(true);
-        fetchEodRecords();
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to create EOD record');
+    transactions.forEach(txn => {
+      const dateKey = new Date(txn.date).toISOString().split('T')[0];
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
       }
-    } catch (error) {
-      console.error('Error creating EOD:', error);
-      alert('Failed to create EOD record');
-    }
+      groups[dateKey].push(txn);
+    });
+
+    const sortedDates = Object.keys(groups).sort((a, b) => {
+      return new Date(b).getTime() - new Date(a).getTime();
+    });
+
+    return sortedDates.map((date, index) => {
+      const transactions = groups[date];
+      const totalAmount = transactions.reduce((sum, txn) => sum + txn.totalPaidNzdCents, 0);
+      const completedCount = transactions.filter(txn => txn.status && txn.status.name !== 'OPEN').length;
+      const pendingCount = transactions.filter(txn => !txn.status || txn.status.name === 'OPEN').length;
+
+      return {
+        date,
+        transactions,
+        isExpanded: index === 0,
+        totalAmount,
+        completedCount,
+        pendingCount
+      };
+    });
   };
 
-  const handleOpenEod = (eod: EodRecord) => {
-    setCurrentEod(eod);
-    setCashReceived((eod.cashReceivedCents / 100).toFixed(2));
-    setNotes(eod.notes || '');
-    setShowModal(true);
-  };
-
-  const handleSubmitEod = async () => {
-    if (!currentEod) return;
-
-    const cashReceivedCents = Math.round(parseFloat(cashReceived || '0') * 100);
+  const handleUpdateTransactionStatus = async (transactionId: string, newStatusId: string, dayDate: string) => {
+    const previousGroups = [...dayGroups];
 
     try {
-      const response = await fetch(`/api/eod/${currentEod.id}`, {
+      const response = await fetch(`/api/transactions/${transactionId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cashReceivedCents,
-          notes,
-          status: 'COMPLETED'
-        })
+        body: JSON.stringify({ statusId: newStatusId })
       });
 
       if (response.ok) {
-        setShowModal(false);
-        fetchEodRecords();
-        alert('EOD reconciliation completed successfully');
+        const newStatus = allStatuses.find(s => s.id === newStatusId);
+
+        if (newStatus && newStatus.name !== 'OPEN' && soundEnabled) {
+          playNotificationSound();
+        }
+
+        await fetchTransactions();
       } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to update EOD record');
+        alert('Failed to update transaction status');
       }
     } catch (error) {
-      console.error('Error updating EOD:', error);
-      alert('Failed to update EOD record');
+      console.error('Error updating transaction status:', error);
+      alert('Failed to update transaction status');
+      setDayGroups(previousGroups);
     }
+  };
+
+  const toggleDay = (date: string) => {
+    setDayGroups(prev => prev.map(group =>
+      group.date === date
+        ? { ...group, isExpanded: !group.isExpanded }
+        : group
+    ));
+  };
+
+  const toggleExpandAll = () => {
+    setExpandAll(!expandAll);
+    setDayGroups(prev => prev.map(group => ({ ...group, isExpanded: !expandAll })));
   };
 
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return <CheckCircleIcon className="w-5 h-5 text-green-600" />;
-      case 'DISCREPANCY':
-        return <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />;
-      default:
-        return <ClockIcon className="w-5 h-5 text-yellow-600" />;
-    }
-  };
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      COMPLETED: 'bg-green-100 text-green-800',
-      DISCREPANCY: 'bg-red-100 text-red-800',
-      PENDING: 'bg-yellow-100 text-yellow-800'
-    };
-    return styles[status as keyof typeof styles] || styles.PENDING;
+    const dateOnly = date.toISOString().split('T')[0];
+    const todayOnly = today.toISOString().split('T')[0];
+    const yesterdayOnly = yesterday.toISOString().split('T')[0];
+
+    if (dateOnly === todayOnly) {
+      return 'Today';
+    } else if (dateOnly === yesterdayOnly) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-NZ', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
   };
 
   if (authStatus === 'loading' || loading) {
@@ -181,8 +240,7 @@ export default function EodPage() {
     ...agents.filter(a => !a.isHeadOffice).map(a => ({ id: a.id, name: `${a.name} (${a.agentCode})` }))
   ];
 
-  const existingEodIds = new Set(eodRecords.map(r => r.agent?.id || 'head-office'));
-  const missingAgents = agentOptions.filter(a => !existingEodIds.has(a.id || 'head-office'));
+  const totalPendingTransactions = dayGroups.reduce((sum, group) => sum + group.pendingCount, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
@@ -190,265 +248,178 @@ export default function EodPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">End of Day Reconciliation</h1>
-          <p className="text-gray-600 mt-1">Verify cash received matches system records</p>
+          <h1 className="text-3xl font-bold text-gray-900">End of Day Review</h1>
+          <p className="text-gray-600 mt-1">Review and complete pending transactions for each day</p>
         </div>
 
-        {/* Date Selector */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">Date:</label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+            <label className="text-sm font-medium text-gray-700">Filter by Agent:</label>
+            <select
+              value={selectedAgent}
+              onChange={(e) => setSelectedAgent(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
-              className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
             >
-              Today
-            </button>
+              <option value="">All Agents</option>
+              {agentOptions.map((agent) => (
+                <option key={agent.id || 'head-office'} value={agent.id || ''}>
+                  {agent.name}
+                </option>
+              ))}
+            </select>
 
-            <div className="ml-auto flex gap-2">
-              <label className="text-sm font-medium text-gray-700">Filter by Agent:</label>
-              <select
-                value={selectedAgent}
-                onChange={(e) => setSelectedAgent(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            <div className="ml-auto flex items-center gap-4">
+              <div className="text-sm">
+                <span className="font-medium text-gray-700">Total Pending: </span>
+                <span className={`font-bold ${totalPendingTransactions > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                  {totalPendingTransactions}
+                </span>
+              </div>
+              <button
+                onClick={toggleExpandAll}
+                className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg"
               >
-                <option value="">All Agents</option>
-                {agentOptions.map((agent) => (
-                  <option key={agent.id || 'head-office'} value={agent.id || ''}>
-                    {agent.name}
-                  </option>
-                ))}
-              </select>
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Missing EODs Alert */}
-        {missingAgents.length > 0 && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <div className="flex items-start">
-              <ExclamationTriangleIcon className="w-5 h-5 text-yellow-400 mt-0.5 mr-3" />
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-yellow-800">EOD Not Started</h3>
-                <p className="text-sm text-yellow-700 mt-1">
-                  The following locations have not started EOD for {new Date(selectedDate).toLocaleDateString()}:
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {missingAgents.map((agent) => (
-                    <button
-                      key={agent.id || 'head-office'}
-                      onClick={() => handleCreateEod(agent.id)}
-                      className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-md text-sm font-medium"
-                    >
-                      Start EOD for {agent.name}
-                    </button>
-                  ))}
-                </div>
+        {dayGroups.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">All Clear!</h3>
+            <p className="text-gray-600">No pending transactions found. All transactions have been completed.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {dayGroups.map((group) => (
+              <div key={group.date} className="bg-white rounded-lg shadow overflow-hidden">
+                <button
+                  onClick={() => toggleDay(group.date)}
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {group.isExpanded ? (
+                      <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+                    ) : (
+                      <ChevronRightIcon className="w-5 h-5 text-gray-500" />
+                    )}
+                    <div className="text-left">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {formatDate(group.date)}
+                      </h3>
+                      <p className="text-sm text-gray-500">{group.date}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Pending</p>
+                      <p className={`text-lg font-bold ${group.pendingCount > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        {group.pendingCount}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Total Amount</p>
+                      <p className="text-lg font-bold text-gray-900">
+                        {formatCurrency(group.totalAmount)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Transactions</p>
+                      <p className="text-lg font-bold text-gray-900">
+                        {group.transactions.length}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {group.isExpanded && (
+                  <div className="border-t border-gray-200 bg-gray-50">
+                    {group.pendingCount === 0 ? (
+                      <div className="px-6 py-8 text-center">
+                        <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                        <p className="text-green-600 font-medium">
+                          All transactions completed for this day
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-4 space-y-3">
+                        {group.transactions.map((txn) => (
+                          <div
+                            key={txn.id}
+                            className={`rounded-lg p-4 ${
+                              !txn.status || txn.status.name === 'OPEN'
+                                ? 'bg-yellow-50 border border-yellow-200'
+                                : 'bg-white border border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <a
+                                    href={`/transactions/${txn.id}`}
+                                    className="text-sm font-semibold text-blue-600 hover:text-blue-800"
+                                  >
+                                    {txn.txnNumber}
+                                  </a>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {formatCurrency(txn.totalPaidNzdCents)}
+                                  </span>
+                                  {txn.agent && (
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                      {txn.agent.agentCode}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <span className="font-medium">{txn.customer.fullName}</span>
+                                  <span className="text-gray-400">→</span>
+                                  <span>{txn.beneficiaryName}</span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Customer ID: {txn.customer.customerId}
+                                </p>
+                              </div>
+
+                              <div className="flex-shrink-0">
+                                <select
+                                  value={txn.status?.id || ''}
+                                  onChange={(e) => handleUpdateTransactionStatus(txn.id, e.target.value, group.date)}
+                                  className="text-sm font-semibold px-3 py-2 rounded-lg border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-[150px]"
+                                  style={{
+                                    backgroundColor: txn.status?.color || '#6b7280',
+                                    color: '#ffffff',
+                                    borderColor: txn.status?.color || '#6b7280'
+                                  }}
+                                >
+                                  <option value="" style={{ backgroundColor: '#ffffff', color: '#000000' }}>
+                                    No Status
+                                  </option>
+                                  {allStatuses.map((status) => (
+                                    <option
+                                      key={status.id}
+                                      value={status.id}
+                                      style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                                    >
+                                      {status.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
+            ))}
           </div>
         )}
-
-        {/* EOD Records Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              EOD Records for {new Date(selectedDate).toLocaleDateString()}
-            </h2>
-          </div>
-
-          {eodRecords.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              No EOD records found for this date
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Location
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Transactions
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      System Total
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Cash Received
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Difference
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Completed By
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {eodRecords.map((eod) => (
-                    <tr key={eod.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {eod.agent?.name || 'Head Office'}
-                        </div>
-                        {eod.agent && (
-                          <div className="text-xs text-gray-500">{eod.agent.agentCode}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                        {eod.systemTransactionCount}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
-                        {formatCurrency(eod.systemTotalCents)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                        {formatCurrency(eod.cashReceivedCents)}
-                      </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-medium ${
-                        eod.differenceCents === 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}>
-                        {formatCurrency(eod.differenceCents)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(eod.status)}
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(eod.status)}`}>
-                            {eod.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {eod.completedByEmail || '-'}
-                        {eod.completedAt && (
-                          <div className="text-xs text-gray-400">
-                            {new Date(eod.completedAt).toLocaleTimeString()}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleOpenEod(eod)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          {eod.status === 'PENDING' ? 'Complete' : 'View'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       </main>
-
-      {/* EOD Modal */}
-      {showModal && currentEod && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-            <h3 className="text-lg font-bold mb-4">
-              EOD Reconciliation - {currentEod.agent?.name || 'Head Office'}
-            </h3>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">System Transactions</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {currentEod.systemTransactionCount}
-                  </p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">System Total</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(currentEod.systemTotalCents)}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cash Received (NZD)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={cashReceived}
-                  onChange={(e) => setCashReceived(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-lg font-medium"
-                  placeholder="0.00"
-                  disabled={currentEod.status !== 'PENDING'}
-                />
-              </div>
-
-              {cashReceived && (
-                <div className={`p-4 rounded-lg ${
-                  Math.abs(parseFloat(cashReceived) * 100 - currentEod.systemTotalCents) < 1
-                    ? 'bg-green-50 border border-green-200'
-                    : 'bg-red-50 border border-red-200'
-                }`}>
-                  <p className="text-sm font-medium">Difference:</p>
-                  <p className={`text-2xl font-bold ${
-                    Math.abs(parseFloat(cashReceived) * 100 - currentEod.systemTotalCents) < 1
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  }`}>
-                    {formatCurrency(Math.round(parseFloat(cashReceived) * 100) - currentEod.systemTotalCents)}
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes (optional)
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  rows={3}
-                  placeholder="Add notes about any discrepancies or issues..."
-                  disabled={currentEod.status !== 'PENDING'}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                {currentEod.status === 'PENDING' ? 'Cancel' : 'Close'}
-              </button>
-              {currentEod.status === 'PENDING' && (
-                <button
-                  onClick={handleSubmitEod}
-                  disabled={!cashReceived}
-                  className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Complete EOD
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

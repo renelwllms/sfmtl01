@@ -168,7 +168,7 @@ export async function GET(request: NextRequest) {
         txn.proofDocumentsProvided || '',
         // AML
         txn.isPtrRequired ? 'Yes' : 'No',
-        txn.createdBy.email,
+        txn.createdBy?.email || '',
         new Date(txn.createdAt).toISOString()
       ].map(field => {
         // Escape CSV fields that contain commas, quotes, or newlines

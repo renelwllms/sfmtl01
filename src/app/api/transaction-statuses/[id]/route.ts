@@ -7,7 +7,7 @@ import { logActivity } from '@/lib/activity-logger';
 // PATCH /api/transaction-statuses/[id] - Update a transaction status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,7 +24,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { name, label, color, isDefault, isActive, order } = body;
 
@@ -94,7 +94,7 @@ export async function PATCH(
 // DELETE /api/transaction-statuses/[id] - Delete a transaction status
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -111,7 +111,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if status exists and count transactions using it
     const status = await db.transactionStatus.findUnique({

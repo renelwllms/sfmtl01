@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 // DELETE /api/transactions/:id/family-contributions/:contributionId - Delete a specific family contribution
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; contributionId: string } }
+  { params }: { params: Promise<{ id: string; contributionId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,7 +14,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, contributionId } = params;
+    const { id, contributionId } = await params;
 
     // Verify contribution exists and belongs to this transaction
     const contribution = await db.familyContribution.findUnique({

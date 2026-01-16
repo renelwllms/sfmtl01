@@ -95,7 +95,7 @@ export default function NewCustomerPage() {
             const fieldName = err.path.join('.') || 'Unknown field';
             const friendlyFieldName = fieldName
               .replace(/([A-Z])/g, ' $1')
-              .replace(/^./, str => str.toUpperCase())
+              .replace(/^./, (str: string) => str.toUpperCase())
               .trim();
             return `${friendlyFieldName}: ${err.message}`;
           });
@@ -253,20 +253,6 @@ export default function NewCustomerPage() {
                   disabled={loading}
                 />
               </div>
-
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                  Address (General)
-                </label>
-                <textarea
-                  id="address"
-                  rows={2}
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  disabled={loading}
-                />
-              </div>
             </div>
 
             {/* Phone & Address Information */}
@@ -321,7 +307,7 @@ export default function NewCustomerPage() {
                     id="streetAddress"
                     type="text"
                     value={formData.streetAddress}
-                    onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value, address: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value, address: `${e.target.value}, ${formData.suburb}, ${formData.city} ${formData.postcode}`.trim() })}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loading}
                   />
@@ -335,7 +321,7 @@ export default function NewCustomerPage() {
                     id="suburb"
                     type="text"
                     value={formData.suburb}
-                    onChange={(e) => setFormData({ ...formData, suburb: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, suburb: e.target.value, address: `${formData.streetAddress}, ${e.target.value}, ${formData.city} ${formData.postcode}`.trim() })}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loading}
                   />
@@ -349,7 +335,7 @@ export default function NewCustomerPage() {
                     id="city"
                     type="text"
                     value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value, address: `${formData.streetAddress}, ${formData.suburb}, ${e.target.value} ${formData.postcode}`.trim() })}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loading}
                   />
@@ -363,7 +349,7 @@ export default function NewCustomerPage() {
                     id="postcode"
                     type="text"
                     value={formData.postcode}
-                    onChange={(e) => setFormData({ ...formData, postcode: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, postcode: e.target.value, address: `${formData.streetAddress}, ${formData.suburb}, ${formData.city} ${e.target.value}`.trim() })}
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     disabled={loading}
                   />

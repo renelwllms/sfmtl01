@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import FamilyContributionsTable from '@/components/FamilyContributionsTable';
@@ -186,7 +186,7 @@ function ProofOfAddressUpload({ transactionId }: { transactionId: string }) {
   );
 }
 
-export default function NewTransactionPage() {
+function NewTransactionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedCustomerId = searchParams.get('customerId');
@@ -2095,5 +2095,13 @@ export default function NewTransactionPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function NewTransactionPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-gray-600">Loading...</div></div>}>
+      <NewTransactionPageContent />
+    </Suspense>
   );
 }

@@ -167,7 +167,7 @@ export async function PATCH(
     const userId = (session.user as any).id;
     const { ipAddress, userAgent } = getRequestInfo(request);
     await logTransactionActivity(
-      'TRANSACTION_UPDATED',
+      'TRANSACTION_VIEWED',
       transaction.id,
       transaction.txnNumber,
       userId,

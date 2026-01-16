@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Samoa Finance - Money Transfer",
-  description: "Samoa Finance Money Transfer System",
+  title: "TransferPoint - Money Transfer",
+  description: "TransferPoint Money Transfer System",
 };
 
 export default function RootLayout({

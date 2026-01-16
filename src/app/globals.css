@@ -30,3 +30,72 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Fix blurry text in inputs */
+input, textarea, select {
+  /* Remove any GPU acceleration that causes blur */
+  transform: none !important;
+  backface-visibility: visible !important;
+  perspective: none !important;
+  will-change: auto !important;
+  /* Ensure proper text rendering */
+  font-smooth: never;
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+  /* Prevent filter effects */
+  filter: none !important;
+}
+
+/* Force dark text color in all input fields - MAXIMUM SPECIFICITY */
+input,
+textarea,
+select,
+input:focus,
+textarea:focus,
+select:focus,
+input:active,
+textarea:active,
+select:active,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="search"],
+input:not(:placeholder-shown),
+textarea:not(:placeholder-shown) {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+  -moz-text-fill-color: #000000 !important;
+  text-fill-color: #000000 !important;
+}
+
+/* Additional WebKit-specific rules for Safari on Mac */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Ensure placeholder text is visible but lighter */
+input::placeholder,
+textarea::placeholder,
+select::placeholder,
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder,
+select::-webkit-input-placeholder,
+input::-moz-placeholder,
+textarea::-moz-placeholder,
+select::-moz-placeholder,
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder,
+select:-ms-input-placeholder {
+  color: #9ca3af !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}

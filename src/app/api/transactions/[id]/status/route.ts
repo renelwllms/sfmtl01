@@ -8,7 +8,7 @@ import { sendEmail, generateTransactionCompletedEmail } from '@/lib/email';
 // PATCH /api/transactions/[id]/status - Update transaction status
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,7 +16,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { statusId } = body;
 
@@ -127,8 +127,8 @@ export async function PATCH(
       }
     );
 
-    // Send completion email if status is COMPLETED
-    if (newStatus.name === 'COMPLETED' && transaction.customer.email) {
+    // Send completion email if status is COMPLETED or CLOSED
+    if ((newStatus.name === 'COMPLETED' || newStatus.name === 'CLOSED') && transaction.customer.email) {
       try {
         const emailHtml = generateTransactionCompletedEmail(updatedTransaction);
         await sendEmail({

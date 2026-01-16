@@ -101,12 +101,27 @@ export default function TransactionDetailsPage() {
   const [editingBeneficiary, setEditingBeneficiary] = useState(false);
   const [beneficiaryName, setBeneficiaryName] = useState('');
   const [savingBeneficiary, setSavingBeneficiary] = useState(false);
+  const [statuses, setStatuses] = useState<any[]>([]);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchTransaction();
+      fetchStatuses();
     }
   }, [id]);
+
+  const fetchStatuses = async () => {
+    try {
+      const response = await fetch('/api/transaction-statuses');
+      if (response.ok) {
+        const data = await response.json();
+        setStatuses(data.filter((s: any) => s.isActive));
+      }
+    } catch (error) {
+      console.error('Failed to fetch statuses:', error);
+    }
+  };
 
   const fetchTransaction = async () => {
     setLoading(true);
@@ -187,6 +202,32 @@ export default function TransactionDetailsPage() {
     }
   };
 
+  const handleStatusChange = async (newStatusId: string) => {
+    if (!transaction) return;
+
+    setUpdatingStatus(true);
+    try {
+      const response = await fetch(`/api/transactions/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statusId: newStatusId })
+      });
+
+      if (response.ok) {
+        const updatedTransaction = await response.json();
+        setTransaction(updatedTransaction);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-50">
@@ -242,18 +283,31 @@ export default function TransactionDetailsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Transaction Details</h1>
               <p className="text-lg text-gray-600 mt-1">{transaction.txnNumber}</p>
             </div>
-            {transaction.status && (
-              <span
-                className="px-4 py-2 rounded-full text-sm font-semibold"
+            <div className="flex flex-col items-end gap-2">
+              <label className="text-xs font-medium text-gray-600">Transaction Status</label>
+              <select
+                value={transaction.status?.id || ''}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                disabled={updatingStatus}
+                className="px-4 py-2 text-sm font-semibold rounded-lg border-2 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 cursor-pointer"
                 style={{
-                  backgroundColor: `${transaction.status.color}20`,
-                  color: transaction.status.color,
-                  border: `2px solid ${transaction.status.color}`
+                  backgroundColor: transaction.status?.color || '#6b7280',
+                  color: '#ffffff',
+                  borderColor: transaction.status?.color || '#6b7280',
                 }}
               >
-                {transaction.status.label}
-              </span>
-            )}
+                <option value="">No Status</option>
+                {statuses.map((status) => (
+                  <option
+                    key={status.id}
+                    value={status.id}
+                    style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                  >
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

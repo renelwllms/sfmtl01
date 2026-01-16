@@ -10,11 +10,11 @@ export async function GET(request: NextRequest) {
     if (!settings) {
       settings = await db.businessBrandingSettings.create({
         data: {
-          businessName: 'Samoa Finance Money Transfer',
+          businessName: 'TransferPoint',
           fontSize: '36',
           fontColor: '#1e40af',
           fontFamily: 'Inter',
-          footerText: 'Samoa Finance Money Transfer Limited | Developed & Hosted by Edgepoint'
+          footerText: 'TransferPoint | Developed & Hosted by Edgepoint'
         }
       });
     }

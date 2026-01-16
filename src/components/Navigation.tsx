@@ -3,7 +3,9 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useUI } from '@/contexts/UIContext';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getUserSettings, updateUserSettings } from '@/lib/notifications';
+import { Icon } from '@iconify/react';
 
 export default function Navigation() {
   const { data: session } = useSession();
@@ -14,6 +16,30 @@ export default function Navigation() {
   const isAdmin = rolesArray.includes('ADMIN');
   const hasAMLAccess = isAdmin || rolesArray.includes('AML');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [customersDropdownOpen, setCustomersDropdownOpen] = useState(false);
+  const [transactionsDropdownOpen, setTransactionsDropdownOpen] = useState(false);
+  const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    const settings = await getUserSettings();
+    if (settings) {
+      setSoundEnabled(settings.soundNotificationsEnabled);
+    }
+  };
+
+  const handleToggleSound = async () => {
+    setSavingSettings(true);
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    await updateUserSettings({ soundNotificationsEnabled: newValue });
+    setSavingSettings(false);
+  };
 
   const getNavStyles = () => {
     const baseClasses = 'shadow-lg';
@@ -50,20 +76,29 @@ export default function Navigation() {
     }`;
   };
 
-  const getMenuIcons = () => {
-    return {
-      '/': '📊',
-      '/customers/list': '👥',
-      '/customers/new': '➕',
-      '/transactions/list': '💳',
-      '/transactions/new': '💸',
-      '/reports': '📈',
-      '/aml': '🔍',
-      '/settings': '⚙️'
-    };
+  const getMenuIcon = (path: string) => {
+    const iconClass = "w-5 h-5";
+    switch (path) {
+      case '/':
+        return <Icon icon="material-symbols:dashboard" className={iconClass} />;
+      case '/customers/list':
+        return <Icon icon="material-symbols:group" className={iconClass} />;
+      case '/customers/new':
+        return <Icon icon="material-symbols:person-add" className={iconClass} />;
+      case '/transactions/list':
+        return <Icon icon="material-symbols:credit-card" className={iconClass} />;
+      case '/transactions/new':
+        return <Icon icon="material-symbols:payments" className={iconClass} />;
+      case '/reports':
+        return <Icon icon="material-symbols:assessment" className={iconClass} />;
+      case '/aml':
+        return <Icon icon="material-symbols:shield" className={iconClass} />;
+      case '/settings':
+        return <Icon icon="material-symbols:settings" className={iconClass} />;
+      default:
+        return null;
+    }
   };
-
-  const icons = getMenuIcons();
 
   const getBadgeStyles = () =>
     settings.navStyle === 'minimal'
@@ -75,44 +110,44 @@ export default function Navigation() {
     return (
       <nav className={`fixed ${settings.navPosition === 'left' ? 'left-0' : 'right-0'} top-0 h-screen w-72 ${getNavStyles()} overflow-y-auto z-50 flex flex-col`}>
         <div className="p-6 border-b border-white/10">
-          <h1 className={`text-xl font-bold ${getTextColor()}`}>SFMTL</h1>
+          <h1 className={`text-xl font-bold ${getTextColor()}`}>TransferPoint</h1>
           <p className={`text-xs ${getTextOpacity()} mt-1`}>Money Transfer System</p>
         </div>
 
         <div className="flex-1 px-4 py-6 space-y-2">
           <a href="/" className={getLinkStyles('/')}>
-            <span className="text-xl">{icons['/']}</span>
+            {getMenuIcon('/')}
             <span>Dashboard</span>
           </a>
           <a href="/customers/list" className={getLinkStyles('/customers/list')}>
-            <span className="text-xl">{icons['/customers/list']}</span>
+            {getMenuIcon('/customers/list')}
             <span>All Customers</span>
           </a>
           <a href="/customers/new" className={getLinkStyles('/customers/new')}>
-            <span className="text-xl">{icons['/customers/new']}</span>
+            {getMenuIcon('/customers/new')}
             <span>New Customer</span>
           </a>
           <a href="/transactions/list" className={getLinkStyles('/transactions/list')}>
-            <span className="text-xl">{icons['/transactions/list']}</span>
+            {getMenuIcon('/transactions/list')}
             <span>All Transactions</span>
           </a>
           <a href="/transactions/new" className={getLinkStyles('/transactions/new')}>
-            <span className="text-xl">{icons['/transactions/new']}</span>
+            {getMenuIcon('/transactions/new')}
             <span>New Transaction</span>
           </a>
           <a href="/reports" className={getLinkStyles('/reports')}>
-            <span className="text-xl">{icons['/reports']}</span>
+            {getMenuIcon('/reports')}
             <span>Reports</span>
           </a>
           {hasAMLAccess && (
             <a href="/aml" className={getLinkStyles('/aml')}>
-              <span className="text-xl">{icons['/aml']}</span>
+              {getMenuIcon('/aml')}
               <span>AML Compliance</span>
             </a>
           )}
           {isAdmin && (
             <a href="/settings" className={getLinkStyles('/settings')}>
-              <span className="text-xl">{icons['/settings']}</span>
+              {getMenuIcon('/settings')}
               <span>Settings</span>
             </a>
           )}
@@ -126,7 +161,7 @@ export default function Navigation() {
             </div>
             {rolesArray.length > 0 && rolesArray[0] !== '' && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {rolesArray.map((role) => (
+                {rolesArray.map((role: string) => (
                   <span key={role} className={`text-xs ${getBadgeStyles()} px-2 py-1 rounded`}>
                     {role}
                   </span>
@@ -136,13 +171,14 @@ export default function Navigation() {
           </div>
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
               settings.navStyle === 'minimal'
                 ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 : 'bg-white/10 text-white/90 hover:bg-white/20'
             }`}
           >
-            🚪 Sign out
+            <Icon icon="material-symbols:logout" className="w-4 h-4" />
+            Sign out
           </button>
         </div>
       </nav>
@@ -156,93 +192,107 @@ export default function Navigation() {
         <div className="max-w-full mx-auto px-6">
           <div className="flex justify-between items-center h-14">
             {/* Left side - Hamburger + Logo + Main Nav */}
-            <div className="flex items-center gap-6">
-              {/* Hamburger Menu Button */}
+            <div className="flex items-center gap-3">
+              {/* Hamburger Menu Button - Only visible on mobile/tablet, hidden on desktop */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg bg-white hover:bg-gray-100 transition-colors"
+                className="lg:hidden p-2 rounded-lg bg-white hover:bg-gray-100 transition-colors"
               >
-                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                <Icon icon="material-symbols:menu" className="w-6 h-6 text-gray-700" />
               </button>
 
               {/* Logo */}
-              <h1 className="text-xl font-bold text-white whitespace-nowrap">SFMTL</h1>
+              <h1 className="text-xl font-bold text-white whitespace-nowrap">TransferPoint</h1>
 
               {/* Main Navigation Links */}
-              <div className="hidden lg:flex items-center gap-1">
-                <a href="/" className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              <div className="hidden lg:flex items-center gap-0.5">
+                <a href="/" className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   pathname === '/' ? 'bg-white/20 text-white' : 'text-white/90 hover:bg-white/10'
                 }`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
+                  <Icon icon="material-symbols:dashboard" className="w-5 h-5" />
                   Dashboard
                 </a>
 
                 {/* Customers Dropdown */}
-                <div className="relative group">
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 transition-all">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
+                <div
+                  className="relative"
+                  onMouseEnter={() => setCustomersDropdownOpen(true)}
+                  onMouseLeave={() => setCustomersDropdownOpen(false)}
+                >
+                  <button
+                    onClick={() => {
+                      setCustomersDropdownOpen(!customersDropdownOpen);
+                      setTransactionsDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 transition-all"
+                  >
+                    <Icon icon="material-symbols:group" className="w-5 h-5" />
                     Customers
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
+                    <Icon icon="material-symbols:keyboard-arrow-down" className="w-4 h-4" />
                   </button>
-                  <div className="absolute left-0 mt-1 w-56 rounded-lg shadow-xl bg-white opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <a href="/customers/list" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 rounded-t-lg">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                      All Customers
-                    </a>
-                    <a href="/customers/new" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
-                      New Customer
-                    </a>
-                    <a href="/customers/import" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      Import Customers
-                    </a>
-                  </div>
+                  {customersDropdownOpen && (
+                    <div
+                      className="absolute left-0 mt-1 w-56 rounded-lg shadow-xl bg-white z-50"
+                    >
+                      <a href="/customers/list" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 rounded-t-lg">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        All Customers
+                      </a>
+                      <a href="/customers/new" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        New Customer
+                      </a>
+                      <a href="/customers/import" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Import Customers
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* Transactions Dropdown */}
-                <div className="relative group">
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 transition-all">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
+                <div
+                  className="relative"
+                  onMouseEnter={() => setTransactionsDropdownOpen(true)}
+                  onMouseLeave={() => setTransactionsDropdownOpen(false)}
+                >
+                  <button
+                    onClick={() => {
+                      setTransactionsDropdownOpen(!transactionsDropdownOpen);
+                      setCustomersDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 transition-all"
+                  >
+                    <Icon icon="material-symbols:credit-card" className="w-5 h-5" />
                     Transactions
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
+                    <Icon icon="material-symbols:keyboard-arrow-down" className="w-4 h-4" />
                   </button>
-                  <div className="absolute left-0 mt-1 w-56 rounded-lg shadow-xl bg-white opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <a href="/transactions/list" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 rounded-t-lg">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
-                      All Transactions
-                    </a>
-                    <a href="/transactions/new" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      New Transaction
-                    </a>
-                  </div>
+                  {transactionsDropdownOpen && (
+                    <div
+                      className="absolute left-0 mt-1 w-56 rounded-lg shadow-xl bg-white z-50"
+                    >
+                      <a href="/transactions/list" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 rounded-t-lg">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        All Transactions
+                      </a>
+                      <a href="/transactions/new" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg">
+                        <Icon icon="material-symbols:payments" className="w-5 h-5 text-gray-700" />
+                        New Transaction
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* Reports Link */}
-                <a href="/reports" className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                <a href="/reports" className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   pathname === '/reports' ? 'bg-white/20 text-white' : 'text-white/90 hover:bg-white/10'
                 }`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +302,7 @@ export default function Navigation() {
                 </a>
 
                 {/* Agents Link */}
-                <a href="/agents" className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                <a href="/agents" className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   pathname === '/agents' ? 'bg-white/20 text-white' : 'text-white/90 hover:bg-white/10'
                 }`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,7 +312,7 @@ export default function Navigation() {
                 </a>
 
                 {/* EOD Link */}
-                <a href="/eod" className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                <a href="/eod" className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   pathname === '/eod' ? 'bg-white/20 text-white' : 'text-white/90 hover:bg-white/10'
                 }`}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,7 +323,7 @@ export default function Navigation() {
 
                 {/* AML Link */}
                 {hasAMLAccess && (
-                  <a href="/aml" className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  <a href="/aml" className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all ${
                     pathname === '/aml' ? 'bg-white/20 text-white' : 'text-white/90 hover:bg-white/10'
                   }`}>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,7 +336,7 @@ export default function Navigation() {
                 {/* Settings and Users Links - Admin only */}
                 {isAdmin && (
                   <>
-                    <a href="/users" className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    <a href="/users" className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all ${
                       pathname === '/users' ? 'bg-white/20 text-white' : 'text-white/90 hover:bg-white/10'
                     }`}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -294,7 +344,7 @@ export default function Navigation() {
                       </svg>
                       Users
                     </a>
-                    <a href="/settings" className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    <a href="/settings" className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all ${
                       pathname === '/settings' ? 'bg-white/20 text-white' : 'text-white/90 hover:bg-white/10'
                     }`}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,13 +359,22 @@ export default function Navigation() {
             </div>
 
             {/* Right side - User info */}
-            <div className="flex items-center gap-3">
-              <span className="hidden md:block text-xs text-white/90">
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                onClick={() => setNotificationSettingsOpen(true)}
+                className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all"
+                title="Notification Settings"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+              </button>
+              <span className="hidden xl:block text-xs text-white/90">
                 {session?.user?.email}
               </span>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white hover:bg-white/20 transition-all"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 text-white hover:bg-white/20 transition-all whitespace-nowrap flex-shrink-0"
               >
                 Sign out
               </button>
@@ -357,6 +416,65 @@ export default function Navigation() {
                 </svg>
               </a>
             )}
+
+            {/* Spacer to push logout button to bottom */}
+            <div className="flex-1"></div>
+
+            {/* Logout button at bottom of sidebar */}
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="p-3 rounded-lg hover:bg-red-100 transition-colors border-t border-gray-300 w-full"
+              title="Sign out"
+            >
+              <svg className="w-6 h-6 text-red-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Settings Modal */}
+      {notificationSettingsOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setNotificationSettingsOpen(false)}>
+          <div className="bg-white rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4 text-gray-900">Notification Settings</h3>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <h4 className="font-medium text-gray-900">Sound Notifications</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">Play sound when transactions are completed</p>
+                </div>
+                <button
+                  onClick={handleToggleSound}
+                  disabled={savingSettings}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    soundEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  } ${savingSettings ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      soundEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setNotificationSettingsOpen(false)}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

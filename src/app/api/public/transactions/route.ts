@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
     const validation = TransactionSchema.safeParse(body);
     if (!validation.success) {
       console.log('❌ API: Validation failed');
-      console.log('Validation errors:', JSON.stringify(validation.error.errors, null, 2));
+      console.log('Validation errors:', JSON.stringify(validation.error.issues, null, 2));
       console.log('Error format:', validation.error.format());
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.error.errors },
+        { error: 'Validation failed', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -141,21 +141,11 @@ export async function POST(request: NextRequest) {
     // Send email notification if customer has email
     if (customer.email) {
       try {
-        const emailContent = generateTransactionInProgressEmail({
-          customerName: customer.fullName,
-          txnNumber: transaction.txnNumber,
-          amount: (transaction.amountNzdCents / 100).toFixed(2),
-          fee: (transaction.feeNzdCents / 100).toFixed(2),
-          total: (transaction.totalPaidNzdCents / 100).toFixed(2),
-          currency: transaction.currency,
-          foreignAmount: transaction.totalForeignReceived.toFixed(2),
-          beneficiaryName: transaction.beneficiaryName
-        });
-
+        const emailHtml = generateTransactionInProgressEmail(transaction);
         await sendEmail({
           to: customer.email,
           subject: `Transaction ${transaction.txnNumber} - In Progress`,
-          html: emailContent
+          html: emailHtml
         });
 
         console.log(`Email notification sent to ${customer.email} for transaction ${transaction.txnNumber}`);

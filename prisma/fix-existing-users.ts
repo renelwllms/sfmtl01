@@ -18,18 +18,6 @@ async function fixExistingUsers() {
       }
     }
 
-    // Update the original admin to have ADMIN role
-    await prisma.user.updateMany({
-      where: { email: 'admin@samoafinance.local' },
-      data: { roles: 'ADMIN' }
-    });
-
-    // Update the original staff to have STAFF role
-    await prisma.user.updateMany({
-      where: { email: 'staff@samoafinance.local' },
-      data: { roles: 'STAFF' }
-    });
-
     console.log('\nUpdated all users!');
 
     // Show final state

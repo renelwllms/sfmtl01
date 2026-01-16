@@ -68,6 +68,7 @@ export default function AllTransactionsPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [agents, setAgents] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -144,6 +145,30 @@ export default function AllTransactionsPage() {
     } else {
       setSortBy(field);
       setSortOrder('desc');
+    }
+  }
+
+  async function handleStatusChange(transactionId: string, newStatusId: string) {
+    setUpdatingStatus(transactionId);
+    try {
+      const response = await fetch(`/api/transactions/${transactionId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ statusId: newStatusId })
+      });
+
+      if (response.ok) {
+        // Refresh the transactions list to show updated status
+        await fetchTransactions();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status');
+    } finally {
+      setUpdatingStatus(null);
     }
   }
 
@@ -400,17 +425,28 @@ export default function AllTransactionsPage() {
                           )}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                          {txn.status && (
-                            <span
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                              style={{
-                                backgroundColor: `${txn.status.color}20`,
-                                color: txn.status.color
-                              }}
-                            >
-                              {txn.status.label}
-                            </span>
-                          )}
+                          <select
+                            value={txn.status?.id || ''}
+                            onChange={(e) => handleStatusChange(txn.id, e.target.value)}
+                            disabled={updatingStatus === txn.id}
+                            className="text-xs font-semibold px-3 py-1.5 rounded-lg border-2 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 cursor-pointer min-w-[120px]"
+                            style={{
+                              backgroundColor: txn.status?.color || '#6b7280',
+                              color: '#ffffff',
+                              borderColor: txn.status?.color || '#6b7280'
+                            }}
+                          >
+                            <option value="" style={{ backgroundColor: '#ffffff', color: '#000000' }}>No Status</option>
+                            {statuses.map((status) => (
+                              <option
+                                key={status.id}
+                                value={status.id}
+                                style={{ backgroundColor: '#ffffff', color: '#000000' }}
+                              >
+                                {status.label}
+                              </option>
+                            ))}
+                          </select>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-600">
                           {txn.createdBy?.email || 'N/A'}

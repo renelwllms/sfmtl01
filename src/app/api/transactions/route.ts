@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const agentId = searchParams.get('agentId'); // Filter by agent
     const source = searchParams.get('source'); // 'agent' or 'head-office'
     const statusId = searchParams.get('statusId'); // Filter by status
+    const date = searchParams.get('date'); // Filter by specific date (YYYY-MM-DD)
 
     const skip = (page - 1) * limit;
 
@@ -55,6 +56,19 @@ export async function GET(request: NextRequest) {
     // Filter by status
     if (statusId) {
       andConditions.push({ statusId: statusId });
+    }
+
+    // Filter by date
+    if (date) {
+      const targetDate = new Date(date);
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      andConditions.push({
+        date: {
+          gte: targetDate,
+          lt: nextDay
+        }
+      });
     }
 
     if (searchTerm) {
@@ -176,7 +190,7 @@ export async function POST(request: NextRequest) {
     const validation = TransactionSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.error.errors },
+        { error: 'Validation failed', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -291,7 +305,7 @@ export async function POST(request: NextRequest) {
       'TRANSACTION_CREATED',
       transaction.id,
       transaction.txnNumber,
-      validUserId || undefined,
+      validUserId || '',
       (session.user as any).email,
       `Transaction ${transaction.txnNumber} created for customer ${customer.fullName} - ${data.currency} ${data.totalForeignReceived.toFixed(2)}${agentId ? ` via agent ${transaction.agent?.name}` : ''}`,
       {

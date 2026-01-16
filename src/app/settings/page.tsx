@@ -76,11 +76,11 @@ export default function SettingsPage() {
 
   // Business Branding State
   const [brandingSettings, setBrandingSettings] = useState({
-    businessName: 'Samoa Finance Money Transfer',
+    businessName: 'TransferPoint',
     fontSize: '36',
     fontColor: '#1e40af',
     fontFamily: 'Inter',
-    footerText: 'Samoa Finance Money Transfer Limited | Developed & Hosted by Edgepoint'
+    footerText: 'TransferPoint | Developed & Hosted by Edgepoint'
   });
   const [savingBranding, setSavingBranding] = useState(false);
   const [brandingMessage, setBrandingMessage] = useState('');
@@ -1468,26 +1468,13 @@ export default function SettingsPage() {
                 </form>
 
                 <div className="mt-8 pt-8 border-t">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-4">Current Users</h3>
-                  <div className="bg-gray-50 rounded-md p-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">admin@samoafinance.local</p>
-                          <p className="text-xs text-gray-500">Role: Admin</p>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t">
-                        <div>
-                          <p className="font-medium">staff@samoafinance.local</p>
-                          <p className="text-xs text-gray-500">Role: Staff</p>
-                        </div>
-                      </div>
-                    </div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">User Provisioning</h3>
+                  <div className="bg-gray-50 rounded-md p-4 text-sm text-gray-700">
+                    <p>Users are automatically created the first time they sign in with Microsoft SSO.</p>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Note: To manage users directly, use Prisma Studio: <code className="bg-gray-100 px-2 py-1 rounded">npx prisma studio</code>
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-4">
-                    Note: To manage users directly, use Prisma Studio: <code className="bg-gray-100 px-2 py-1 rounded">npx prisma studio</code>
-                  </p>
                 </div>
               </div>
             )}
@@ -1981,7 +1968,7 @@ export default function SettingsPage() {
                           value={emailSettings.senderName}
                           onChange={(e) => setEmailSettings({ ...emailSettings, senderName: e.target.value })}
                           className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="SFMTL Notifications"
+                          placeholder="TransferPoint Notifications"
                         />
                         <p className="mt-1 text-xs text-gray-500">The display name for outgoing emails</p>
                       </div>
@@ -2365,7 +2352,7 @@ export default function SettingsPage() {
                           value={brandingSettings.businessName}
                           onChange={(e) => setBrandingSettings({ ...brandingSettings, businessName: e.target.value })}
                           className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Samoa Finance Money Transfer"
+                          placeholder="TransferPoint"
                         />
                       </div>
 
@@ -2466,7 +2453,7 @@ export default function SettingsPage() {
                         onChange={(e) => setBrandingSettings({ ...brandingSettings, footerText: e.target.value })}
                         rows={3}
                         className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Samoa Finance Money Transfer Limited | Developed & Hosted by Edgepoint"
+                        placeholder="TransferPoint | Developed & Hosted by Edgepoint"
                       />
                       <p className="mt-1 text-xs text-gray-500">
                         Leave empty to hide the footer. Use | to separate sections.

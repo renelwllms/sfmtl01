@@ -7,7 +7,15 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "prisma:seed": "npx prisma db seed"
+    "prisma:seed": "npx prisma db seed",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop samoa-finance-app",
+    "pm2:restart": "pm2 restart samoa-finance-app",
+    "pm2:reload": "pm2 reload samoa-finance-app",
+    "pm2:delete": "pm2 delete samoa-finance-app",
+    "pm2:logs": "pm2 logs samoa-finance-app",
+    "pm2:status": "pm2 status",
+    "pm2:monit": "pm2 monit"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -16,6 +24,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@heroicons/react": "^2.2.0",
+    "@iconify/react": "^6.0.2",
     "@material/web": "^2.4.1",
     "@mui/material": "^7.3.5",
     "@mui/x-date-pickers": "^8.17.0",
@@ -26,8 +35,8 @@
     "dayjs": "^1.11.19",
     "formidable": "^3.5.4",
     "luxon": "^3.7.2",
-    "next": "15.5.4",
-    "next-auth": "^4.24.11",
+    "next": "15.5.9",
+    "next-auth": "^4.24.13",
     "qrcode.react": "^4.2.0",
     "react": "19.1.0",
     "react-datepicker": "^8.7.0",
@@ -37,7 +46,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/bcrypt": "^6.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/formidable": "^3.4.5",
@@ -46,11 +55,15 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.5.4",
-    "markdown-pdf": "^11.0.0",
+    "eslint-config-next": "15.5.9",
+    "pm2": "^6.0.14",
     "prisma": "^6.16.3",
     "tailwindcss": "^4",
     "tsx": "^4.20.6",
     "typescript": "^5"
+  },
+  "overrides": {
+    "preact": "10.28.2",
+    "systeminformation": "5.30.4"
   }
 }

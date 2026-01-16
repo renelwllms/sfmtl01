@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   <div class="container">
     <div class="header">
       <h1>✅ Email Integration Test</h1>
-      <p>SFMTL - Samoa Finance Money Transfer</p>
+      <p>TransferPoint</p>
     </div>
     <div class="content">
       <div class="success-box">
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       </div>
 
       <p>Dear Administrator,</p>
-      <p>This is a test email to confirm that your Office 365 email integration with SFMTL is configured correctly and working as expected.</p>
+      <p>This is a test email to confirm that your Office 365 email integration with TransferPoint is configured correctly and working as expected.</p>
 
       <h3>What's Working:</h3>
       <ul>
@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
       <p><strong>Note:</strong> This test was sent at ${new Date().toLocaleString('en-NZ')} by ${userEmail}</p>
     </div>
     <div class="footer">
-      <p>This is a test message from SFMTL Email Integration.</p>
-      <p>© ${new Date().getFullYear()} SFMTL - Samoa Finance Money Transfer Ltd. All rights reserved.</p>
+      <p>This is a test message from TransferPoint Email Integration.</p>
+      <p>© ${new Date().getFullYear()} TransferPoint. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -82,9 +82,9 @@ export async function POST(request: NextRequest) {
 
     const success = await sendEmail({
       to: userEmail,
-      subject: '✅ SFMTL Email Integration Test - Success',
+      subject: '✅ TransferPoint Email Integration Test - Success',
       html: testEmailHtml,
-      text: 'Your Office 365 email integration is working correctly. This is a test email from SFMTL.'
+      text: 'Your Office 365 email integration is working correctly. This is a test email from TransferPoint.'
     });
 
     if (!success) {

@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       if (dbType === 'postgresql') {
         // Replace sqlserver with postgresql and restore directUrl if needed
         schemaContent = schemaContent.replace(
-          /datasource db \{[^}]+\}/s,
+          /datasource db \{[\s\S]+?\}/,
           `datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       } else if (dbType === 'sqlserver') {
         // Replace postgresql with sqlserver and remove directUrl
         schemaContent = schemaContent.replace(
-          /datasource db \{[^}]+\}/s,
+          /datasource db \{[\s\S]+?\}/,
           `datasource db {
   provider = "sqlserver"
   url      = env("DATABASE_URL")

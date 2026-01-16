@@ -372,7 +372,7 @@ export default function CustomerRegistrationPage({ params }: { params: Promise<{
         {/* Footer */}
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>By registering, you agree to our terms and conditions</p>
-          <p className="mt-2">SFMTL Finance - Secure Money Transfer</p>
+          <p className="mt-2">TransferPoint - Secure Money Transfer</p>
         </div>
       </div>
     </div>

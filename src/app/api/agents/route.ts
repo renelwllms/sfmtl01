@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const includeStats = searchParams.get("includeStats") === "true";
 
-    const where = status ? { status } : {};
+    const where = status ? { status: status as any } : {};
 
     const agents = await db.agent.findMany({
       where,

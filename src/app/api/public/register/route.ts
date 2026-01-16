@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if customer with this phone already exists
-    const existingCustomer = await prisma.customer.findUnique({
+    const existingCustomer = await db.customer.findUnique({
       where: { phone },
     });
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       description: `Customer registered via QR code: ${customer.fullName} (${customer.customerId}) - Agent: ${agent.agentCode}`,
       entityType: "Customer",
       entityId: customer.id,
-      metadata: JSON.stringify({ agentCode, source: "qr_registration" }),
+      metadata: { agentCode, source: "qr_registration" },
     });
 
     return NextResponse.json(

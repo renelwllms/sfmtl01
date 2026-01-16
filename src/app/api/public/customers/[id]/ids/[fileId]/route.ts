@@ -30,7 +30,7 @@ export async function GET(
       // Use the stored mimeType from database
       const contentType = file.mimeType || 'application/octet-stream';
 
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(new Uint8Array(fileBuffer), {
         headers: {
           'Content-Type': contentType,
           'Content-Disposition': `inline; filename="${file.filePath.split('/').pop()}"`,

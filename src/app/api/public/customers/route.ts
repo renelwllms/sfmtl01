@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const validation = CustomerSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.error.errors },
+        { error: 'Validation failed', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     // Check if customer with this phone already exists
     const existingCustomer = await db.customer.findUnique({
-      where: { phone: data.phone }
+      where: { phone: data.mobilePhone }
     });
 
     if (existingCustomer) {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         lastName: data.lastName,
         fullName: `${data.firstName} ${data.lastName}`,
         dob: new Date(data.dob),
-        phone: data.phone,
+        phone: data.mobilePhone,
         email: data.email || null,
         address: data.address || null,
         streetAddress: data.streetAddress || null,
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         city: data.city || null,
         postcode: data.postcode || null,
         homePhone: data.homePhone || null,
-        mobilePhone: data.mobilePhone || data.phone,
+        mobilePhone: data.mobilePhone,
         occupation: data.occupation || null,
         employerName: data.employerName || null,
         employerAddress: data.employerAddress || null,

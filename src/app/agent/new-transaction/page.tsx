@@ -185,7 +185,7 @@ export default function AgentNewTransactionPage() {
       <div className="bg-blue-600 text-white p-4 shadow-lg">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold">SFMTL</h1>
+            <h1 className="text-xl font-bold">TransferPoint</h1>
             <p className="text-xs text-blue-100">Agent Portal</p>
           </div>
           <button

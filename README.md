@@ -662,8 +662,8 @@ sudo systemctl start samoa-finance
 
 ## Support & Resources
 
-### Default Login Credentials
-Check the login page for default credentials (should be changed immediately).
+### Default Login
+Microsoft SSO only. Users are created on first sign-in.
 
 ### Service Commands Reference
 ```bash

@@ -1,12 +1,19 @@
 import { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
 import AzureADProvider from 'next-auth/providers/azure-ad';
-import bcrypt from 'bcrypt';
 import { db } from '@/lib/db';
 import { logActivity } from '@/lib/activity-log';
 
 // Re-export role helper functions from roles.ts
 export { hasRole, getRolesArray } from '@/lib/roles';
+
+// Allowed email domains
+const ALLOWED_EMAIL_DOMAINS = ['@samofinance.co.nz'];
+
+// Helper function to validate email domain
+function isAllowedEmailDomain(email: string): boolean {
+  const emailLower = email.toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.some(domain => emailLower.endsWith(domain.toLowerCase()));
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -25,50 +32,6 @@ export const authOptions: NextAuthOptions = {
         })]
       : []
     ),
-    // Traditional credentials login
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        const user = await db.user.findUnique({
-          where: { email: credentials.email }
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash
-        );
-
-        if (!isValid) {
-          return null;
-        }
-
-        // Log successful login
-        await logActivity({
-          type: 'USER_LOGIN',
-          userId: user.id,
-          userEmail: user.email,
-          description: `User ${user.email} logged in successfully`
-        });
-
-        return {
-          id: user.id,
-          email: user.email,
-          roles: user.roles // Now using roles (comma-separated string)
-        };
-      }
-    })
   ],
   callbacks: {
     async jwt({ token, user, account }) {
@@ -79,6 +42,12 @@ export const authOptions: NextAuthOptions = {
 
       // For Azure AD login, find or create user in database
       if (account?.provider === 'azure-ad' && token.email) {
+        // Check if email domain is allowed for SSO login
+        if (!isAllowedEmailDomain(token.email as string)) {
+          console.log(`SSO login attempt rejected: ${token.email} - not from allowed domain`);
+          throw new Error('Access denied. Only @samofinance.co.nz email addresses are allowed.');
+        }
+
         const dbUser = await db.user.findUnique({
           where: { email: token.email as string }
         });

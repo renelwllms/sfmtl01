@@ -145,7 +145,7 @@ export default function AgentNewCustomerPage({ params }: { params: Promise<{ age
             const fieldName = err.path.join('.') || 'Unknown field';
             const friendlyFieldName = fieldName
               .replace(/([A-Z])/g, ' $1')
-              .replace(/^./, str => str.toUpperCase())
+              .replace(/^./, (str: string) => str.toUpperCase())
               .trim();
             return `${friendlyFieldName}: ${err.message}`;
           });
