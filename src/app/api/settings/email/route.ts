@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         enabled: settings.enabled,
         tenantId: settings.tenantId || '',
         clientId: settings.clientId || '',
-        clientSecret: settings.clientSecret || '',
+        clientSecret: settings.clientSecret ? '***hidden***' : '',
         senderEmail: settings.senderEmail || '',
         senderName: settings.senderName || ''
       }
