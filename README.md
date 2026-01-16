@@ -359,7 +359,7 @@ AZURE_AD_TENANT_ID=your-tenant-id
 ```env
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=devdevdev
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/samoa_finance"
+DATABASE_URL="postgresql://YOUR_DB_USER:YOUR_DB_PASSWORD@localhost:5432/samoa_finance"
 ```
 
 **Production:**

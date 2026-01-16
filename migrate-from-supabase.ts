@@ -1,10 +1,17 @@
 import { PrismaClient } from '@prisma/client';
 
+const supabaseUrl = process.env.SUPABASE_DATABASE_URL;
+const localUrl = process.env.LOCAL_DATABASE_URL;
+
+if (!supabaseUrl || !localUrl) {
+  throw new Error('Missing SUPABASE_DATABASE_URL or LOCAL_DATABASE_URL environment variables.');
+}
+
 // Supabase connection (direct connection, not pooler)
 const supabase = new PrismaClient({
   datasources: {
     db: {
-      url: 'postgresql://postgres.thewkrhddqovlfpebxwu:TVYL0p21zDXCtMZ5@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres'
+      url: supabaseUrl
     }
   }
 });
@@ -13,7 +20,7 @@ const supabase = new PrismaClient({
 const local = new PrismaClient({
   datasources: {
     db: {
-      url: 'postgresql://postgres:ecu2onvu@localhost:5432/samoa_finance'
+      url: localUrl
     }
   }
 });

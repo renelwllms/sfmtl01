@@ -67,33 +67,46 @@ export async function GET(req: NextRequest) {
     });
 
     // Group by agent and calculate totals
-    const agentStats = transactions.reduce((acc, txn) => {
-      if (!txn.agentId || !txn.agent) return acc;
+    type AgentStat = {
+      agentId: string;
+      agentCode: string;
+      agentName: string;
+      transactionCount: number;
+      totalAmountNzd: number;
+      totalFeesNzd: number;
+      totalRevenueNzd: number;
+    };
 
-      const key = txn.agentId;
-      if (!acc[key]) {
-        acc[key] = {
-          agentId: txn.agentId,
+    const agentStats = new Map<string, AgentStat>();
+
+    transactions.forEach((txn) => {
+      if (!txn.agentId || !txn.agent) return;
+
+      const key = String(txn.agentId);
+      const existing = agentStats.get(key);
+
+      if (!existing) {
+        agentStats.set(key, {
+          agentId: String(txn.agentId),
           agentCode: txn.agent.agentCode,
           agentName: txn.agent.name,
-          transactionCount: 0,
-          totalAmountNzd: 0,
-          totalFeesNzd: 0,
-          totalRevenueNzd: 0,
-        };
+          transactionCount: 1,
+          totalAmountNzd: txn.amountNzdCents / 100,
+          totalFeesNzd: txn.feeNzdCents / 100,
+          totalRevenueNzd: txn.totalPaidNzdCents / 100,
+        });
+        return;
       }
 
-      acc[key].transactionCount += 1;
-      acc[key].totalAmountNzd += txn.amountNzdCents / 100;
-      acc[key].totalFeesNzd += txn.feeNzdCents / 100;
-      acc[key].totalRevenueNzd += txn.totalPaidNzdCents / 100;
-
-      return acc;
-    }, {} as Record<string, any>);
+      existing.transactionCount += 1;
+      existing.totalAmountNzd += txn.amountNzdCents / 100;
+      existing.totalFeesNzd += txn.feeNzdCents / 100;
+      existing.totalRevenueNzd += txn.totalPaidNzdCents / 100;
+    });
 
     // Convert to array and sort by revenue
-    const stats = Object.values(agentStats).sort(
-      (a: any, b: any) => b.totalRevenueNzd - a.totalRevenueNzd
+    const stats = Array.from(agentStats.values()).sort(
+      (a, b) => b.totalRevenueNzd - a.totalRevenueNzd
     );
 
     // Calculate totals across all agents

@@ -7,7 +7,9 @@ const db = new PrismaClient({
 async function test() {
   try {
     console.log('Testing database connection...');
-    console.log('DATABASE_URL:', process.env.DATABASE_URL);
+    const dbUrl = process.env.DATABASE_URL || '';
+    const redactedUrl = dbUrl.replace(/postgresql:\/\/([^:]+):([^@]+)@/, 'postgresql://$1:***@');
+    console.log('DATABASE_URL:', redactedUrl || '(not set)');
 
     await db.$connect();
     console.log('✓ Connected successfully!');

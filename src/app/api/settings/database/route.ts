@@ -33,8 +33,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       settings: {
         ...settings,
-        databaseUrl: dbUrl,
-        directUrl: directUrl,
+        password: '',
+        databaseUrl: redactDatabaseUrl(dbUrl),
+        directUrl: redactDatabaseUrl(directUrl),
         dbType: detectDatabaseType(dbUrl)
       }
     });
@@ -218,6 +219,22 @@ function parseDatabaseUrl(url: string) {
     port: '5432',
     database: 'samoa_finance'
   };
+}
+
+function redactDatabaseUrl(url: string) {
+  if (!url) {
+    return '';
+  }
+
+  if (url.startsWith('postgresql://')) {
+    return url.replace(/postgresql:\/\/([^:]+):([^@]+)@/, 'postgresql://$1:***@');
+  }
+
+  if (url.startsWith('sqlserver://')) {
+    return url.replace(/password=([^;]+)/, 'password=***');
+  }
+
+  return url;
 }
 
 // Helper function to update .env variable

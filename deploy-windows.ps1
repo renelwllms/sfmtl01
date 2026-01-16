@@ -16,6 +16,7 @@ $DOMAIN = "sfmtl.edgepoint.co.nz"
 $APP_PORT = 3000
 $DB_NAME = "sfmtl_finance"
 $DB_USER = "postgres"
+$DB_PASSWORD = $env:DB_PASSWORD
 $EMAIL = "admin@edgepoint.co.nz"  # For SSL certificate
 
 # Functions
@@ -34,6 +35,11 @@ function New-RandomPassword {
     $chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     $password = -join ((1..25) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
     return $password
+}
+
+if (-not $DB_PASSWORD) {
+    $DB_PASSWORD = New-RandomPassword
+    Write-Warning "Generated a database password for this install. Save it securely."
 }
 
 # Welcome
@@ -68,7 +74,7 @@ Write-Host ""
 Write-Info "Step 2: Checking PostgreSQL installation..."
 if (-not (Test-CommandExists psql)) {
     Write-Info "Installing PostgreSQL 16..."
-    choco install postgresql16 -y --params '/Password:PostgresPass123!'
+    choco install postgresql16 -y --params "/Password:$DB_PASSWORD"
     refreshenv
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     Write-Success "PostgreSQL installed"
@@ -145,8 +151,6 @@ Write-Host ""
 # Step 7: Setup Database
 #############################################
 Write-Info "Step 7: Setting up PostgreSQL database..."
-$DB_PASSWORD = New-RandomPassword
-
 # Set PostgreSQL service to run
 Start-Service postgresql-x64-16 -ErrorAction SilentlyContinue
 
@@ -154,7 +158,7 @@ Start-Service postgresql-x64-16 -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 3
 
 # Create database and user
-$env:PGPASSWORD = "PostgresPass123!"
+$env:PGPASSWORD = $DB_PASSWORD
 $createDbScript = @"
 CREATE DATABASE $DB_NAME;
 "@
@@ -169,7 +173,7 @@ Write-Host ""
 #############################################
 Write-Info "Step 8: Creating environment configuration..."
 $NEXTAUTH_SECRET = New-RandomPassword
-$DATABASE_URL = "postgresql://${DB_USER}:PostgresPass123!@localhost:5432/${DB_NAME}"
+$DATABASE_URL = "postgresql://${DB_USER}:$DB_PASSWORD@localhost:5432/${DB_NAME}"
 
 $envContent = @"
 # Database Configuration
@@ -182,7 +186,7 @@ NEXTAUTH_SECRET=$NEXTAUTH_SECRET
 
 # PostgreSQL Configuration (for reference)
 POSTGRES_USER=$DB_USER
-POSTGRES_PASSWORD=PostgresPass123!
+POSTGRES_PASSWORD=$DB_PASSWORD
 POSTGRES_DB=$DB_NAME
 "@
 
@@ -328,7 +332,7 @@ Application Port: $APP_PORT
 Database Configuration:
 - Database: $DB_NAME
 - User: $DB_USER
-- Password: PostgresPass123!
+- Password: (see DB_PASSWORD used during install)
 - Connection: $DATABASE_URL
 
 NextAuth Secret: $NEXTAUTH_SECRET

@@ -63,23 +63,36 @@ export async function GET(request: NextRequest) {
     });
 
     // Group by currency and calculate totals
-    const summary: any = {
-      WST: { count: 0, totalNzdCents: 0, totalFees: 0, totalPaid: 0, totalForeign: 0 },
-      AUD: { count: 0, totalNzdCents: 0, totalFees: 0, totalPaid: 0, totalForeign: 0 },
-      USD: { count: 0, totalNzdCents: 0, totalFees: 0, totalPaid: 0, totalForeign: 0 }
+    type SummaryRecord = {
+      count: number;
+      totalNzdCents: number;
+      totalFees: number;
+      totalPaid: number;
+      totalForeign: number;
     };
 
+    const summary = new Map<string, SummaryRecord>([
+      ['WST', { count: 0, totalNzdCents: 0, totalFees: 0, totalPaid: 0, totalForeign: 0 }],
+      ['AUD', { count: 0, totalNzdCents: 0, totalFees: 0, totalPaid: 0, totalForeign: 0 }],
+      ['USD', { count: 0, totalNzdCents: 0, totalFees: 0, totalPaid: 0, totalForeign: 0 }]
+    ]);
+
     transactions.forEach(txn => {
-      summary[txn.currency].count++;
-      summary[txn.currency].totalNzdCents += txn.amountNzdCents;
-      summary[txn.currency].totalFees += txn.feeNzdCents;
-      summary[txn.currency].totalPaid += txn.totalPaidNzdCents;
-      summary[txn.currency].totalForeign += txn.totalForeignReceived;
+      const entry = summary.get(txn.currency);
+      if (!entry) {
+        return;
+      }
+
+      entry.count += 1;
+      entry.totalNzdCents += txn.amountNzdCents;
+      entry.totalFees += txn.feeNzdCents;
+      entry.totalPaid += txn.totalPaidNzdCents;
+      entry.totalForeign += txn.totalForeignReceived;
     });
 
     const report = {
       month: monthParam,
-      summary,
+      summary: Object.fromEntries(summary.entries()),
       transactions
     };
 

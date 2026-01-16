@@ -21,10 +21,31 @@ export default function CustomerDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const safeViewingFile = useMemo(() => {
+    if (!viewingFile) return null;
+
+    const customerId = String(params.id || '');
+    if (!viewingFile.startsWith('/') || viewingFile.startsWith('//')) {
+      return null;
+    }
+
+    if (!viewingFile.startsWith(`/api/customers/${customerId}/ids/`)) {
+      return null;
+    }
+
+    return viewingFile;
+  }, [viewingFile, params.id]);
 
   useEffect(() => {
     fetchCustomer();
   }, []);
+
+  useEffect(() => {
+    if (viewingFile && !safeViewingFile) {
+      setViewingFile(null);
+      toast.error('Invalid document path.');
+    }
+  }, [viewingFile, safeViewingFile, toast]);
 
   async function fetchCustomer() {
     try {
@@ -518,7 +539,7 @@ export default function CustomerDetailPage() {
       </main>
 
       {/* File Viewer Modal */}
-      {viewingFile && (
+      {safeViewingFile && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center p-4 border-b">
@@ -531,15 +552,15 @@ export default function CustomerDetailPage() {
               </button>
             </div>
             <div className="flex-1 overflow-auto p-4">
-              {viewingFile.endsWith('.pdf') ? (
+              {safeViewingFile.endsWith('.pdf') ? (
                 <iframe
-                  src={viewingFile}
+                  src={safeViewingFile}
                   className="w-full h-full min-h-[600px]"
                   title="PDF Viewer"
                 />
               ) : (
                 <img
-                  src={viewingFile}
+                  src={safeViewingFile}
                   alt="ID Document"
                   className="max-w-full h-auto mx-auto"
                 />
@@ -547,7 +568,7 @@ export default function CustomerDetailPage() {
             </div>
             <div className="p-4 border-t flex gap-2">
               <a
-                href={viewingFile}
+                href={safeViewingFile}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
