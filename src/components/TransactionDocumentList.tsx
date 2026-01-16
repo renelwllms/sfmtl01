@@ -90,10 +90,13 @@ export default function TransactionDocumentList({
   };
 
   const getDocumentUrl = (documentId: string) => {
+    const safeTransactionId = encodeURIComponent(transactionId);
+    const safeDocumentId = encodeURIComponent(documentId);
+
     if (usePublicApi) {
-      return `/api/public/transactions/${transactionId}/documents/${documentId}`;
+      return `/api/public/transactions/${safeTransactionId}/documents/${safeDocumentId}`;
     }
-    return `/api/transactions/${transactionId}/documents/${documentId}`;
+    return `/api/transactions/${safeTransactionId}/documents/${safeDocumentId}`;
   };
 
   const getDocumentTypeLabel = (type: string) => {

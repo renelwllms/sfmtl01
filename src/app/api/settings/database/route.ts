@@ -185,7 +185,7 @@ function parseDatabaseUrl(url: string) {
       if (match) {
         return {
           user: match[1],
-          password: match[2],
+          password: '',
           host: match[3],
           port: match[4],
           database: match[5].split('?')[0] // Remove query params
@@ -196,12 +196,11 @@ function parseDatabaseUrl(url: string) {
       const hostMatch = url.match(/sqlserver:\/\/([^:;]+):(\d+)/);
       const dbMatch = url.match(/database=([^;]+)/);
       const userMatch = url.match(/user=([^;]+)/);
-      const passwordMatch = url.match(/password=([^;]+)/);
 
-      if (hostMatch && dbMatch && userMatch && passwordMatch) {
+      if (hostMatch && dbMatch && userMatch) {
         return {
           user: userMatch[1],
-          password: passwordMatch[1],
+          password: '',
           host: hostMatch[1],
           port: hostMatch[2],
           database: dbMatch[1]
